@@ -1,3 +1,10 @@
+import 'package:fixly/home/AI_ImageAnalysis.dart';
+import 'package:fixly/home/BookingsTab.dart';
+import 'package:fixly/home/MessagesTab.dart';
+import 'package:fixly/home/ProfileTab.dart';
+import 'package:fixly/home/Services_screen.dart';
+import 'package:fixly/home/ai_chat_screen.dart';
+import 'package:fixly/home/voice_screen.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -18,14 +25,13 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
-
-  final List<Widget> _pages = const [
-    HomeTab(),
-    Center(child: Text('Services')),
-    Center(child: Text('Bookings')),
-    Center(child: Text('Messages')),
-    Center(child: Text('Profile')),
-  ];
+final List<Widget> _pages = [
+  const HomeTab(),
+  const ServicesTab(),
+  const BookingsTab(),
+  const MessagesTab(),
+  const ProfileTab(),
+];
 
   @override
   Widget build(BuildContext context) {
@@ -120,11 +126,12 @@ class HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _Header(userName: 'Sara', location: 'Nasr City'),
+          const _Header(userName: 'Mario', location: 'Minya'),
           const SizedBox(height: 24),
           const _AiCard(),
           const SizedBox(height: 28),
-          _SectionTitle(title: 'Popular Services', action: 'See all', onTap: () {}),
+          _SectionTitle(title: 'Popular Services', action: 'See all', onTap: () {
+          }),
           const SizedBox(height: 14),
           const _PopularServices(),
           const SizedBox(height: 28),
@@ -338,11 +345,12 @@ class _AiCard extends StatelessWidget {
           Row(
             children: [
               _actionButton(Icons.mic_none, 'Voice', () {
-                // TODO: voice input
+                             Navigator.push(context, MaterialPageRoute(builder: (context)=>VoiceScreen()));
+
               }),
               const SizedBox(width: 14),
               _actionButton(Icons.photo_camera_outlined, 'Image', () {
-                // TODO: image input
+               Navigator.push(context, MaterialPageRoute(builder: (context)=>AiImageAnalysisScreen()));
               }),
             ],
           ),
@@ -432,7 +440,8 @@ class _PopularServices extends StatelessWidget {
         itemBuilder: (context, i) {
           return InkWell(
             onTap: () {
-              // TODO: open service
+           
+           Navigator.push(context, MaterialPageRoute(builder: (context)=>ServicesTab()));
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
