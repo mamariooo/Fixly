@@ -2,7 +2,14 @@ import 'package:fixly/Login/Signup_Technician.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'Login.dart';
+
+
+
+import 'package:fixly/Login/Login.dart';
+
+import 'package:fixly/home/Dashboard_Technician/home_Technicaian.dart'
+    hide kGrey, kBorder, kBlue, kNavy, kBg;
+
 
 const Color kCyan = Color(0xFF14B8D6);
 const Color kHeaderSubtitle = Color(0xFF9DB0D3);
@@ -199,7 +206,8 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                             height: 60,
                             child: ElevatedButton(
                               onPressed: () {
-                                // TODO: technician login logic
+
+                       Navigator.push(context, MaterialPageRoute(builder: (context)=>TechnicianHomeScreen()));
                               },
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kNavy,
