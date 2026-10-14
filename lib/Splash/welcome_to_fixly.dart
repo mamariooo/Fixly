@@ -1,21 +1,8 @@
 
 
-// import 'package:flutter/material.dart';
-
-// class WelcometoFixly extends StatelessWidget {
-//   const WelcometoFixly({super.key});
-
-//   @override
-//   Widget build(BuildContext context) {
-//     return Scaffold(
-//       appBar: AppBar(title: Text("WelcometoFixly")),
-//       body: Center(child: Text("WelcometoFixly"),),
-//     );
-    
-//   }
-// } 
-
-
+import 'package:fixly/Login/Login.dart';
+import 'package:fixly/Login/Signup_Technician.dart';
+import 'package:fixly/Login/Technician_Login.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fixly/main.dart';
@@ -202,7 +189,7 @@ final isAr = locale.languageCode == 'ar';
                           'المتابعة كعميل',
                         ),
                         onTap: () {
-                          // TODO: الانتقال إلى شاشة العميل
+                           Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
                         },
                         isAr: isAr,
                       ),
@@ -211,7 +198,7 @@ final isAr = locale.languageCode == 'ar';
                         'لديك حساب بالفعل؟ سجّل الدخول',
                       ),
                       onLinkTap: () {
-                        // TODO: تسجيل دخول العميل
+                      Navigator.push(context, MaterialPageRoute(builder: (context) =>LoginScreen()));
                       },
                     ),
 
@@ -237,8 +224,7 @@ final isAr = locale.languageCode == 'ar';
                       primaryButton: _OutlinedBtn(
                         label: tr('Login', 'تسجيل الدخول'),
                         onTap: () {
-                          // TODO: تسجيل دخول الفني
-                        },
+                          Navigator.push(context, MaterialPageRoute(builder: (context)=>TechnicianLoginScreen()));                        },
                         isAr: isAr,
                       ),
                       linkText: tr(
@@ -246,7 +232,8 @@ final isAr = locale.languageCode == 'ar';
                         'فني جديد؟ قدّم طلب الانضمام',
                       ),
                       onLinkTap: () {
-                        // TODO: التقديم كفني
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>TechnicianApplyScreen()));
+
                       },
                     ),
                   ],
