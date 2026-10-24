@@ -19,6 +19,7 @@ class _VoiceScreenState extends State<VoiceScreen>
     with SingleTickerProviderStateMixin {
   late final AnimationController _pulse;
   bool _listening = false;
+<<<<<<< HEAD
   String? _transcript;
 
   static const _samples = [
@@ -26,6 +27,8 @@ class _VoiceScreenState extends State<VoiceScreen>
     'فيه تسريب مياه تحت الحوض',
     'The socket in my room is not working',
   ];
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   void initState() {
@@ -43,6 +46,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   void _toggleListening() {
+<<<<<<< HEAD
     setState(() {
       _listening = !_listening;
       if (_listening) _transcript = null;
@@ -56,6 +60,17 @@ class _VoiceScreenState extends State<VoiceScreen>
       setState(() {
         _transcript = _samples[DateTime.now().millisecond % _samples.length];
       });
+=======
+    setState(() => _listening = !_listening);
+    if (_listening) {
+      _pulse.repeat(reverse: true);
+      // TODO: ابدأ التعرف على الصوت (مثلاً بـ speech_to_text)
+      // اللغة: عربي أو إنجليزي
+    } else {
+      _pulse.stop();
+      _pulse.value = 0;
+      // TODO: وقّف التسجيل وابعت النص للـ AI
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     }
   }
 
@@ -71,6 +86,7 @@ class _VoiceScreenState extends State<VoiceScreen>
   }
 
   Widget _micArea() {
+<<<<<<< HEAD
     final outerScale = Tween<double>(
       begin: 1.0,
       end: 1.10,
@@ -79,6 +95,14 @@ class _VoiceScreenState extends State<VoiceScreen>
       begin: 1.0,
       end: 1.06,
     ).animate(CurvedAnimation(parent: _pulse, curve: Curves.easeInOut));
+=======
+    final outerScale = Tween<double>(begin: 1.0, end: 1.10).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+    final midScale = Tween<double>(begin: 1.0, end: 1.06).animate(
+      CurvedAnimation(parent: _pulse, curve: Curves.easeInOut),
+    );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
     return GestureDetector(
       onTap: _toggleListening,
@@ -88,8 +112,13 @@ class _VoiceScreenState extends State<VoiceScreen>
         child: Stack(
           alignment: Alignment.center,
           children: [
+<<<<<<< HEAD
             _ring(200, _cyan.withValues(alpha: 0.12), outerScale),
             _ring(146, _cyan.withValues(alpha: 0.24), midScale),
+=======
+            _ring(200, _cyan.withOpacity(0.12), outerScale),
+            _ring(146, _cyan.withOpacity(0.24), midScale),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             Container(
               width: 98,
               height: 98,
@@ -127,18 +156,26 @@ class _VoiceScreenState extends State<VoiceScreen>
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
                         border: Border.all(
                           color: kBorder.withValues(alpha: 0.6),
                         ),
+=======
+                        border: Border.all(color: kBorder.withOpacity(0.6)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                       ),
                       child: const Icon(Icons.close, color: kNavy, size: 24),
                     ),
                   ),
                   Container(
                     padding: const EdgeInsets.symmetric(
+<<<<<<< HEAD
                       horizontal: 16,
                       vertical: 8,
                     ),
+=======
+                        horizontal: 16, vertical: 8),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     decoration: BoxDecoration(
                       color: _chipBg,
                       borderRadius: BorderRadius.circular(20),
@@ -179,9 +216,13 @@ class _VoiceScreenState extends State<VoiceScreen>
               AnimatedSwitcher(
                 duration: const Duration(milliseconds: 200),
                 child: Text(
+<<<<<<< HEAD
                   _listening
                       ? 'Listening... tap to stop'
                       : 'Tap the mic to speak',
+=======
+                  _listening ? 'Listening... tap to stop' : 'Tap the mic to speak',
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   key: ValueKey(_listening),
                   style: GoogleFonts.manrope(
                     fontSize: 17,
@@ -190,6 +231,7 @@ class _VoiceScreenState extends State<VoiceScreen>
                   ),
                 ),
               ),
+<<<<<<< HEAD
               if (_transcript != null) ...[
                 const SizedBox(height: 24),
                 Container(
@@ -259,10 +301,16 @@ class _VoiceScreenState extends State<VoiceScreen>
                   ],
                 ),
               ],
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ],
           ),
         ),
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

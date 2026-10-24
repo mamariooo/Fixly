@@ -1,13 +1,27 @@
+<<<<<<< HEAD
 import 'dart:async';
+=======
+
+import 'dart:async';
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'package:fixly/home/Dashboard_Technician/Earnings.dart';
 import 'package:fixly/home/Dashboard_Technician/History.dart';
 import 'package:fixly/home/Dashboard_Technician/Profile.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+<<<<<<< HEAD
 import 'package:fixly/core/services/booking_store.dart';
 import 'package:fixly/core/models/booking.dart';
 import 'package:fixly/core/services/notification_store.dart';
 import 'package:fixly/home/notification_screen.dart';
+=======
+import 'package:fixly/Login/Login.dart';
+
+
+
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 const Color kNavy = Color(0xFF1C3358);
 const Color kGrey = Color(0xFF8492A6);
@@ -16,14 +30,27 @@ const Color kBorder = Color(0xFFE5EAF1);
 const Color kBlue = Color(0xFF1B4FA8);
 
 TextStyle _text(double size, FontWeight weight, Color color) {
+<<<<<<< HEAD
   return GoogleFonts.cairo(fontSize: size, fontWeight: weight, color: color);
+=======
+  return GoogleFonts.cairo(
+    fontSize: size,
+    fontWeight: weight,
+    color: color,
+  );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 }
 
 class TechnicianHomeScreen extends StatefulWidget {
   const TechnicianHomeScreen({super.key});
 
   @override
+<<<<<<< HEAD
   State<TechnicianHomeScreen> createState() => _TechnicianHomeScreenState();
+=======
+  State<TechnicianHomeScreen> createState() =>
+      _TechnicianHomeScreenState();
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 }
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
@@ -73,7 +100,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             FittedBox(
               fit: BoxFit.scaleDown,
               alignment: Alignment.centerRight,
+<<<<<<< HEAD
               child: Text(value, style: _text(20, FontWeight.w800, kNavy)),
+=======
+              child: Text(
+                value,
+                style: _text(20, FontWeight.w800, kNavy),
+              ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
           ],
         ),
@@ -102,6 +136,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
+<<<<<<< HEAD
   // ---------- الطلبات والشغل (من BookingStore) ----------
   (Color, Color, String) _urgencyStyle(String urgency) {
     switch (urgency) {
@@ -499,6 +534,12 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
   // الصفحة الرئيسية
   Widget buildHomePage() {
+=======
+  // الصفحة الرئيسية
+  Widget buildHomePage() {
+    final time = '0:${seconds.toString().padLeft(2, '0')}';
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return SafeArea(
       child: SingleChildScrollView(
         padding: const EdgeInsets.all(20),
@@ -531,6 +572,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     borderRadius: BorderRadius.circular(16),
                     border: Border.all(color: kBorder),
                   ),
+<<<<<<< HEAD
                   child: ListenableBuilder(
                     listenable: NotificationStore.instance,
                     builder: (context, _) {
@@ -557,6 +599,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                         ),
                       );
                     },
+=======
+                  child: IconButton(
+                    onPressed: () {},
+                    icon: const Icon(
+                      Icons.notifications_none,
+                      color: kNavy,
+                    ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ),
                 ),
               ],
@@ -590,7 +640,15 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                           children: [
                             Text(
                               isOnline ? 'متصل' : 'غير متصل',
+<<<<<<< HEAD
                               style: _text(26, FontWeight.w800, Colors.white),
+=======
+                              style: _text(
+                                26,
+                                FontWeight.w800,
+                                Colors.white,
+                              ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                             ),
                             const SizedBox(width: 8),
                             CircleAvatar(
@@ -602,7 +660,13 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                           ],
                         ),
                         Text(
+<<<<<<< HEAD
                           isOnline ? 'بتستقبل طلبات' : 'مش هتوصلك طلبات جديدة',
+=======
+                          isOnline
+                              ? 'بتستقبل طلبات'
+                              : 'مش هتوصلك طلبات جديدة',
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                           style: _text(
                             13,
                             FontWeight.w500,
@@ -617,7 +681,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     onChanged: (value) {
                       setState(() => isOnline = value);
                     },
+<<<<<<< HEAD
                     activeThumbColor: Colors.white,
+=======
+                    activeColor: Colors.white,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     activeTrackColor: const Color(0xFF14B8D6),
                     inactiveThumbColor: Colors.white,
                     inactiveTrackColor: const Color(0xFF9DB0D3),
@@ -629,12 +697,192 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             const SizedBox(height: 16),
 
             // الإحصائيات
+<<<<<<< HEAD
             _statsRow(),
+=======
+            Row(
+              children: [
+                stat('شغل النهاردة', '5'),
+                const SizedBox(width: 8),
+                stat('الأرباح', '850 ج.م'),
+                const SizedBox(width: 8),
+                stat('التقييم', '4.8'),
+              ],
+            ),
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             const SizedBox(height: 20),
 
             // الطلب الجديد
             if (isOnline)
+<<<<<<< HEAD
               _incomingRequest()
+=======
+              Container(
+                width: double.infinity,
+                padding: const EdgeInsets.all(16),
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(24),
+                  border: Border.all(
+                    color: const Color(0xFF14B8D6),
+                    width: 1.5,
+                  ),
+                ),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      crossAxisAlignment: WrapCrossAlignment.center,
+                      children: [
+                        chip(
+                          'طلب جديد',
+                          const Color(0xFFDCE9FF),
+                          const Color(0xFF1B4FA8),
+                        ),
+                        chip(
+                          'متوسطة',
+                          const Color(0xFFFDEBC8),
+                          const Color(0xFF8A5300),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Text(
+                      'التكييف مش بيبرّد',
+                      style: _text(22, FontWeight.w800, kNavy),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        info('المسافة', '1.4 كم'),
+                        info('الوصول', '8 دقيقة'),
+                        info('التقدير', '300–450 ج.م'),
+                      ],
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    // ملخص الذكاء الاصطناعي
+                    Container(
+                      width: double.infinity,
+                      padding: const EdgeInsets.all(14),
+                      decoration: BoxDecoration(
+                        color: const Color(0xFFE3F5FA),
+                        borderRadius: BorderRadius.circular(16),
+                      ),
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            'ملخص الذكاء الاصطناعي',
+                            style: _text(
+                              13,
+                              FontWeight.w800,
+                              const Color(0xFF0E7490),
+                            ),
+                          ),
+                          const SizedBox(height: 4),
+                          Text(
+                            'العميل بيبلغ إن التكييف شغال بس مش بيبرّد. '
+                            'احتمال مشكلة تدفق هواء أو تبريد.',
+                            style: _text(14, FontWeight.w500, kNavy),
+                          ),
+                        ],
+                      ),
+                    ),
+
+                    const SizedBox(height: 16),
+
+                    Text(
+                      seconds > 0
+                          ? 'ينتهي خلال $time'
+                          : 'انتهى وقت قبول الطلب',
+                      style: _text(
+                        13,
+                        FontWeight.w700,
+                        const Color(0xFFB42318),
+                      ),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    Row(
+                      children: [
+                        Expanded(
+                          child: OutlinedButton(
+                            onPressed: seconds > 0
+                                ? () {
+                                    setState(() {
+                                      isOnline = true;
+                                    });
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('تم رفض الطلب'),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            style: OutlinedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              side: const BorderSide(color: kBorder),
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'رفض',
+                              style: _text(17, FontWeight.w800, kNavy),
+                            ),
+                          ),
+                        ),
+                        const SizedBox(width: 10),
+                        Expanded(
+                          child: ElevatedButton(
+                            onPressed: seconds > 0
+                                ? () {
+                                    timer?.cancel();
+
+                                    ScaffoldMessenger.of(context).showSnackBar(
+                                      const SnackBar(
+                                        content: Text('تم قبول الطلب'),
+                                      ),
+                                    );
+                                  }
+                                : null,
+                            style: ElevatedButton.styleFrom(
+                              minimumSize: const Size.fromHeight(52),
+                              backgroundColor: const Color(0xFF1F9D63),
+                              disabledBackgroundColor: Colors.grey.shade300,
+                              elevation: 0,
+                              shape: RoundedRectangleBorder(
+                                borderRadius: BorderRadius.circular(16),
+                              ),
+                            ),
+                            child: Text(
+                              'قبول',
+                              style: _text(
+                                17,
+                                FontWeight.w800,
+                                Colors.white,
+                              ),
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              )
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             else
               Container(
                 width: double.infinity,
@@ -676,7 +924,51 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             const SizedBox(height: 20),
 
             // الشغل القادم
+<<<<<<< HEAD
             _currentJob(),
+=======
+            Container(
+              width: double.infinity,
+              padding: const EdgeInsets.all(16),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(20),
+                border: Border.all(color: kBorder),
+              ),
+              child: Row(
+                children: [
+                  Container(
+                    width: 52,
+                    height: 52,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCE9FF),
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    child: const Icon(
+                      Icons.calendar_today_outlined,
+                      color: kBlue,
+                    ),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          'التالي: غسالة',
+                          style: _text(17, FontWeight.w800, kNavy),
+                        ),
+                        Text(
+                          'النهاردة، 8:30 م · مصر الجديدة',
+                          style: _text(12, FontWeight.w500, kGrey),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
           ],
         ),
       ),
@@ -698,7 +990,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         backgroundColor: kBg,
 
         // التنقل بين الصفحات الأربع
+<<<<<<< HEAD
         body: IndexedStack(index: tabIndex, children: pages),
+=======
+        body: IndexedStack(
+          index: tabIndex,
+          children: pages,
+        ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
         // الشريط السفلي الثابت
         bottomNavigationBar: BottomNavigationBar(
@@ -739,3 +1038,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 }
+<<<<<<< HEAD
+=======
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

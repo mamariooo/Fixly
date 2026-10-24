@@ -3,8 +3,11 @@
 import 'package:fixly/Login/Login.dart';
 import 'package:fixly/Login/Signup_Technician.dart';
 import 'package:fixly/Login/Technician_Login.dart';
+<<<<<<< HEAD
 import 'package:fixly/admin/admin_login.dart';
 import 'package:fixly/Onboarding/onboarding_screen.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fixly/main.dart';
@@ -191,6 +194,7 @@ final isAr = locale.languageCode == 'ar';
                           'المتابعة كعميل',
                         ),
                         onTap: () {
+<<<<<<< HEAD
                           // Customer flow: Welcome -> Onboarding -> Login
                           Navigator.push(
                             context,
@@ -198,6 +202,9 @@ final isAr = locale.languageCode == 'ar';
                               builder: (context) => const OnboardingScreen(),
                             ),
                           );
+=======
+                           Navigator.push(context, MaterialPageRoute(builder: (context)=>LoginScreen()));
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                         },
                         isAr: isAr,
                       ),
@@ -244,6 +251,7 @@ final isAr = locale.languageCode == 'ar';
 
                       },
                     ),
+<<<<<<< HEAD
 
                     const SizedBox(height: 16),
 
@@ -261,6 +269,8 @@ final isAr = locale.languageCode == 'ar';
                         );
                       },
                     ),
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ],
                 ),
               ),
@@ -310,7 +320,11 @@ return Container(
     border: Border.all(color: kBorder),
     boxShadow: [
       BoxShadow(
+<<<<<<< HEAD
         color: Colors.black.withValues(alpha: 0.03),
+=======
+        color: Colors.black.withOpacity(0.03),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         blurRadius: 8,
         offset: const Offset(0, 2),
       ),
@@ -465,6 +479,7 @@ fontWeight: FontWeight.w600,
 );
 }
 }
+<<<<<<< HEAD
 
 
 // ====== زر دخول الأدمن ======
@@ -528,3 +543,5 @@ class _AdminEntry extends StatelessWidget {
     );
   }
 }
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

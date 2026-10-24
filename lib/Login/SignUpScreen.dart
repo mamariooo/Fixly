@@ -1,10 +1,16 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+<<<<<<< HEAD
 import 'Login.dart';
 import 'package:fixly/core/theme/app_colors.dart';
 import 'package:fixly/core/utils/validators.dart';
 import 'package:fixly/core/services/mock_session.dart';
 import 'package:fixly/home/home.dart';
+=======
+
+// الألوان (kNavy, kBlue, kBg, kGrey, kBorder) موجودة في login_screen.dart
+import 'Login.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -19,11 +25,14 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+<<<<<<< HEAD
   String? _nameError;
   String? _phoneError;
   String? _emailError;
   String? _passError;
   String? _confirmError;
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   void dispose() {
@@ -36,6 +45,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
   }
 
   OutlineInputBorder _border(Color c, [double w = 1]) => OutlineInputBorder(
+<<<<<<< HEAD
     borderRadius: BorderRadius.circular(16),
     borderSide: BorderSide(color: c, width: w),
   );
@@ -45,6 +55,13 @@ class _SignUpScreenState extends State<SignUpScreen> {
     Widget? prefix,
     String? errorText,
   }) {
+=======
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: c, width: w),
+      );
+
+  InputDecoration _decoration({String? hint, Widget? prefix}) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.manrope(color: kGrey),
@@ -54,6 +71,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       enabledBorder: _border(kBorder),
       focusedBorder: _border(kBlue, 1.5),
+<<<<<<< HEAD
       errorText: errorText,
       errorStyle: GoogleFonts.manrope(
         fontSize: 13,
@@ -78,12 +96,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     ),
   );
+=======
+    );
+  }
+
+  TextStyle get _inputStyle =>
+      GoogleFonts.manrope(fontSize: 17, color: kNavy);
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: GoogleFonts.manrope(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: kNavy,
+          ),
+        ),
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   Widget _phoneField() {
     return TextField(
       controller: _phoneCtrl,
       keyboardType: TextInputType.phone,
       style: _inputStyle,
+<<<<<<< HEAD
       onChanged: (_) {
         if (_phoneError != null) setState(() => _phoneError = null);
       },
@@ -116,10 +154,37 @@ class _SignUpScreenState extends State<SignUpScreen> {
               minHeight: 0,
             ),
           ),
+=======
+      decoration: _decoration(
+        hint: '100 123 4567',
+        prefix: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '+20',
+                style: GoogleFonts.manrope(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: kNavy,
+                ),
+              ),
+              const SizedBox(width: 14),
+              Container(width: 1, height: 28, color: kBorder),
+            ],
+          ),
+        ),
+      ).copyWith(
+        // عشان الـ prefix ياخد عرضه الطبيعي
+        prefixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+      ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     );
   }
 
   void _onCreateAccount() {
+<<<<<<< HEAD
     final nameError = Validators.fullName(_nameCtrl.text);
     final phoneError = Validators.phone(_phoneCtrl.text);
     final emailError = Validators.email(_emailCtrl.text);
@@ -162,6 +227,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
       MaterialPageRoute(builder: (_) => const HomeScreen()),
       (route) => false,
     );
+=======
+    if (_passCtrl.text != _confirmCtrl.text) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(content: Text('Passwords do not match')),
+      );
+      return;
+    }
+    // TODO: create account logic
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   }
 
   @override
@@ -190,6 +264,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         decoration: BoxDecoration(
                           color: Colors.white,
                           borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
                           border: Border.all(
                             color: kBorder.withValues(alpha: 0.6),
                           ),
@@ -199,6 +274,12 @@ class _SignUpScreenState extends State<SignUpScreen> {
                           color: kNavy,
                           size: 28,
                         ),
+=======
+                          border: Border.all(color: kBorder.withOpacity(0.6)),
+                        ),
+                        child: const Icon(Icons.chevron_left,
+                            color: kNavy, size: 28),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                       ),
                     ),
                     const SizedBox(height: 28),
@@ -223,6 +304,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: _nameCtrl,
                       textCapitalization: TextCapitalization.words,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_nameError != null) {
                           setState(() => _nameError = null);
@@ -232,6 +314,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Full name',
                         errorText: _nameError,
                       ),
+=======
+                      decoration: _decoration(hint: 'Full name'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -244,6 +329,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_emailError != null) {
                           setState(() => _emailError = null);
@@ -253,6 +339,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Email',
                         errorText: _emailError,
                       ),
+=======
+                      decoration: _decoration(hint: 'Email'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -261,6 +350,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: _passCtrl,
                       obscureText: true,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_passError != null) {
                           setState(() => _passError = null);
@@ -270,6 +360,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Password',
                         errorText: _passError,
                       ),
+=======
+                      decoration: _decoration(hint: 'Password'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -278,6 +371,7 @@ class _SignUpScreenState extends State<SignUpScreen> {
                       controller: _confirmCtrl,
                       obscureText: true,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_confirmError != null) {
                           setState(() => _confirmError = null);
@@ -287,6 +381,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
                         hint: 'Confirm password',
                         errorText: _confirmError,
                       ),
+=======
+                      decoration: _decoration(hint: 'Confirm password'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -334,4 +431,8 @@ class _SignUpScreenState extends State<SignUpScreen> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

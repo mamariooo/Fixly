@@ -1,8 +1,15 @@
 import 'dart:ui' show PathMetric;
+<<<<<<< HEAD
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
+=======
+
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'package:fixly/Login/Login.dart';
 
 const Color _iconBg = Color(0xFFDCE9FF);
@@ -21,6 +28,7 @@ class AiImageAnalysisScreen extends StatefulWidget {
 class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   // 0 = Upload, 1 = Analyzing, 2 = Result
   int _step = 0;
+<<<<<<< HEAD
   final ImagePicker _picker = ImagePicker();
   Uint8List? _imageBytes;
   _Analysis? _result;
@@ -104,6 +112,14 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
       _imageBytes = null;
       _result = null;
     });
+=======
+
+  Future<void> _choosePhoto() async {
+    // TODO: اختار صورة (مثلاً بـ image_picker)، وبعدها:
+    // setState(() => _step = 1);   // Analyzing
+    // ... ابعت الصورة للـ AI، ولما يرجع النتيجة:
+    // setState(() => _step = 2);   // Result
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   }
 
   // ---------- Header ----------
@@ -119,7 +135,11 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
               border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+=======
+              border: Border.all(color: kBorder.withOpacity(0.6)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             child: const Icon(Icons.chevron_left, color: kNavy, size: 28),
           ),
@@ -216,7 +236,12 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
                   color: _iconBg,
                   borderRadius: BorderRadius.circular(32),
                 ),
+<<<<<<< HEAD
                 child: const Icon(Icons.photo_camera, color: kBlue, size: 44),
+=======
+                child:
+                    const Icon(Icons.photo_camera, color: kBlue, size: 44),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ),
               const SizedBox(height: 22),
               Text(
@@ -241,6 +266,7 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
     );
   }
 
+<<<<<<< HEAD
   // ---------- Analyzing ----------
   Widget _analyzingView() {
     return Center(
@@ -371,6 +397,8 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
     }
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   @override
   Widget build(BuildContext context) {
     return Scaffold(
@@ -385,6 +413,7 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
               const SizedBox(height: 18),
               _stepper(),
               const SizedBox(height: 18),
+<<<<<<< HEAD
               Expanded(child: _body()),
               const SizedBox(height: 20),
               if (_step != 1)
@@ -426,6 +455,35 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
                     ),
                   ),
                 ),
+=======
+
+              // TODO: لما تعمل شاشات Analyzing و Result، بدّل المحتوى حسب _step
+              Expanded(child: _uploadBox()),
+              const SizedBox(height: 20),
+
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: _choosePhoto,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNavy,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: Text(
+                    'Choose photo',
+                    style: GoogleFonts.manrope(
+                      fontSize: 18,
+                      fontWeight: FontWeight.w700,
+                    ),
+                  ),
+                ),
+              ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ],
           ),
         ),
@@ -434,17 +492,31 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   }
 }
 
+<<<<<<< HEAD
+=======
+/// صندوق بخلفية وبوردر متقطع (dashed) من غير أي باكدج
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 class _DashedBoxPainter extends CustomPainter {
   final Color fill;
   final Color border;
   final double radius;
+<<<<<<< HEAD
   static const double dashWidth = 6;
   static const double dashGap = 4;
+=======
+  final double dashWidth;
+  final double dashGap;
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   _DashedBoxPainter({
     required this.fill,
     required this.border,
     this.radius = 30,
+<<<<<<< HEAD
+=======
+    this.dashWidth = 6,
+    this.dashGap = 4,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   });
 
   @override
@@ -478,6 +550,7 @@ class _DashedBoxPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedBoxPainter old) =>
       old.fill != fill || old.border != border || old.radius != radius;
+<<<<<<< HEAD
 }
 
 class _Analysis {
@@ -488,3 +561,6 @@ class _Analysis {
 
   const _Analysis(this.service, this.issue, this.urgency, this.confidence);
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

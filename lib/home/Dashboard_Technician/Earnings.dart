@@ -1,9 +1,17 @@
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fixly/core/models/booking.dart';
 import 'package:fixly/core/services/booking_store.dart';
 
 
+=======
+
+import 'package:flutter/material.dart';
+
+
+import 'package:google_fonts/google_fonts.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 const Color kEarningsNavy = Color(0xFF1C3358);
 const Color kEarningsBg = Color(0xFFF5F7FB);
@@ -21,6 +29,7 @@ class TechnicianEarningsScreen extends StatelessWidget {
       color: color,
     );
   }
+<<<<<<< HEAD
   int _total() => BookingStore.instance.completedJobs
       .fold<int>(0, (sum, b) => sum + (b.price ?? 0));
 
@@ -97,6 +106,8 @@ class TechnicianEarningsScreen extends StatelessWidget {
       },
     );
   }
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   Widget summaryCard({
     required IconData icon,
@@ -192,12 +203,18 @@ class TechnicianEarningsScreen extends StatelessWidget {
                         ],
                       ),
                       const SizedBox(height: 18),
+<<<<<<< HEAD
                      ListenableBuilder(
                         listenable: BookingStore.instance,
                         builder: (context, _) => Text(
                           '${_total()} ج.م',
                           style: text(36, FontWeight.w800, Colors.white),
                         ),
+=======
+                      Text(
+                        '850 ج.م',
+                        style: text(36, FontWeight.w800, Colors.white),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                       ),
                       const SizedBox(height: 8),
                       Container(
@@ -221,6 +238,7 @@ class TechnicianEarningsScreen extends StatelessWidget {
                 const SizedBox(height: 18),
 
                 // الإحصائيات
+<<<<<<< HEAD
                 ListenableBuilder(
                   listenable: BookingStore.instance,
                   builder: (context, _) => Row(
@@ -238,6 +256,22 @@ class TechnicianEarningsScreen extends StatelessWidget {
                       ),
                     ],
                   ),
+=======
+                Row(
+                  children: [
+                    summaryCard(
+                      icon: Icons.check_circle_outline,
+                      title: 'طلبات مكتملة',
+                      value: '5',
+                    ),
+                    const SizedBox(width: 12),
+                    summaryCard(
+                      icon: Icons.pending_actions_outlined,
+                      title: 'قيد التحويل',
+                      value: '0 ج.م',
+                    ),
+                  ],
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                 ),
 
                 const SizedBox(height: 28),
@@ -249,13 +283,70 @@ class TechnicianEarningsScreen extends StatelessWidget {
                       'آخر المعاملات',
                       style: text(21, FontWeight.w800, kEarningsNavy),
                     ),
+<<<<<<< HEAD
+=======
+                    TextButton(
+                      onPressed: () {},
+                      child: Text(
+                        'عرض الكل',
+                        style: text(13, FontWeight.w700, kEarningsGreen),
+                      ),
+                    ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ],
                 ),
 
                 const SizedBox(height: 8),
 
                 // معاملة تجريبية
+<<<<<<< HEAD
                _transactions(),
+=======
+                Container(
+                  padding: const EdgeInsets.all(16),
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(color: kEarningsBorder),
+                  ),
+                  child: Row(
+                    children: [
+                      Container(
+                        width: 48,
+                        height: 48,
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFE0F7EA),
+                          borderRadius: BorderRadius.circular(15),
+                        ),
+                        child: const Icon(
+                          Icons.build_outlined,
+                          color: kEarningsGreen,
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Text(
+                              'صيانة تكييف',
+                              style: text(15, FontWeight.w800, kEarningsNavy),
+                            ),
+                            Text(
+                              'طلب مكتمل',
+                              style: text(12, FontWeight.w500, kEarningsGrey),
+                            ),
+                          ],
+                        ),
+                      ),
+                      Text(
+                        '+300 ج.م',
+                        style: text(15, FontWeight.w800, kEarningsGreen),
+                      ),
+                    ],
+                  ),
+                ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
                 const SizedBox(height: 24),
 

@@ -1,10 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+<<<<<<< HEAD
 import 'package:fixly/Login/Login.dart';
 import 'package:image_picker/image_picker.dart';
 import 'package:fixly/home/voice_screen.dart';
 import 'package:fixly/core/services/booking_store.dart';
 import 'package:fixly/core/services/profile_store.dart';
+=======
+
+import 'package:fixly/Login/Login.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 const Color _cyan = Color(0xFF14B8D6);
 const Color _greenBg = Color(0xFFDDF3E6);
@@ -35,6 +40,7 @@ class _ChatMessage {
   final double? confidence;
 
   const _ChatMessage.user(this.text)
+<<<<<<< HEAD
     : role = _Role.user,
       options = const [],
       service = null,
@@ -48,24 +54,49 @@ class _ChatMessage {
       urgency = null,
       issue = null,
       confidence = null;
+=======
+      : role = _Role.user,
+        options = const [],
+        service = null,
+        urgency = null,
+        issue = null,
+        confidence = null;
+
+  const _ChatMessage.ai(this.text, {this.options = const []})
+      : role = _Role.ai,
+        service = null,
+        urgency = null,
+        issue = null,
+        confidence = null;
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   const _ChatMessage.summary({
     required this.service,
     required this.urgency,
     required this.issue,
     required this.confidence,
+<<<<<<< HEAD
   }) : role = _Role.summary,
        text = null,
        options = const [];
+=======
+  })  : role = _Role.summary,
+        text = null,
+        options = const [];
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 }
 
 // ============================================================
 // Screen
 // ============================================================
 class AiChatScreen extends StatefulWidget {
+<<<<<<< HEAD
   const AiChatScreen({super.key, this.initialMessage});
 
   final String? initialMessage;
+=======
+  const AiChatScreen({super.key});
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -74,6 +105,7 @@ class AiChatScreen extends StatefulWidget {
 class _AiChatScreenState extends State<AiChatScreen> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
+<<<<<<< HEAD
   final ImagePicker _picker = ImagePicker();
   bool _isTyping = false;
   final Set<int> _requested = {};
@@ -83,6 +115,14 @@ class _AiChatScreenState extends State<AiChatScreen> {
     const _ChatMessage.ai(
       'It sounds like your AC may have a cooling or airflow issue.',
     ),
+=======
+
+  // محادثة تجريبية مطابقة للتصميم.
+  // استبدلها بالرد الحقيقي من الـ AI بتاعك.
+  final List<_ChatMessage> _messages = [
+    const _ChatMessage.user('The AC is running but it’s not cooling.'),
+    const _ChatMessage.ai('It sounds like your AC may have a cooling or airflow issue.'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     const _ChatMessage.summary(
       service: 'Air Conditioning',
       urgency: 'Medium',
@@ -96,6 +136,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
   ];
 
   @override
+<<<<<<< HEAD
   void initState() {
     super.initState();
     final first = widget.initialMessage;
@@ -105,6 +146,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
   }
 
   @override
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   void dispose() {
     _inputCtrl.dispose();
     _scrollCtrl.dispose();
@@ -123,6 +166,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     });
   }
 
+<<<<<<< HEAD
   // رد وهمي حسب كلمات في الرسالة (بدل الـ AI الحقيقي)
   List<_ChatMessage> _mockReply(String text) {
     final t = text.toLowerCase();
@@ -268,6 +312,17 @@ class _AiChatScreenState extends State<AiChatScreen> {
         const SnackBar(content: Text('Could not open the camera/gallery')),
       );
     }
+=======
+  void _send(String text) {
+    final t = text.trim();
+    if (t.isEmpty) return;
+    setState(() {
+      _messages.add(_ChatMessage.user(t));
+      // TODO: ابعت الرسالة للـ AI وضيف الرد هنا
+    });
+    _inputCtrl.clear();
+    _scrollToBottom();
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   }
 
   // ---------- Header ----------
@@ -290,7 +345,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
                 border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+=======
+                border: Border.all(color: kBorder.withOpacity(0.6)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ),
               child: const Icon(Icons.chevron_left, color: kNavy, size: 28),
             ),
@@ -313,9 +372,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     const SizedBox(width: 10),
                     Container(
                       padding: const EdgeInsets.symmetric(
+<<<<<<< HEAD
                         horizontal: 12,
                         vertical: 4,
                       ),
+=======
+                          horizontal: 12, vertical: 4),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                       decoration: BoxDecoration(
                         color: _greenBg,
                         borderRadius: BorderRadius.circular(20),
@@ -393,7 +456,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
       padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
       decoration: BoxDecoration(
         color: Colors.white,
+<<<<<<< HEAD
         border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+        border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         borderRadius: const BorderRadius.only(
           topLeft: Radius.circular(24),
           topRight: Radius.circular(24),
@@ -403,17 +470,29 @@ class _AiChatScreenState extends State<AiChatScreen> {
       ),
       child: Text(
         text,
+<<<<<<< HEAD
         style: GoogleFonts.manrope(fontSize: 18, height: 1.35, color: kNavy),
+=======
+        style: GoogleFonts.manrope(
+          fontSize: 18,
+          height: 1.35,
+          color: kNavy,
+        ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ),
     );
   }
 
+<<<<<<< HEAD
   Widget _aiRow(
     Widget content, {
     bool showAvatar = true,
     List<String> options = const [],
     bool isLast = false,
   }) {
+=======
+  Widget _aiRow(Widget content, {bool showAvatar = true, List<String> options = const [], bool isLast = false}) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return Row(
       crossAxisAlignment: CrossAxisAlignment.end,
       children: [
@@ -465,6 +544,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
 
   // ---------- Summary card ----------
   Widget _smallLabel(String t) => Text(
+<<<<<<< HEAD
     t,
     style: GoogleFonts.manrope(
       fontSize: 13,
@@ -473,6 +553,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
       color: kGrey,
     ),
   );
+=======
+        t,
+        style: GoogleFonts.manrope(
+          fontSize: 13,
+          fontWeight: FontWeight.w800,
+          letterSpacing: 1.1,
+          color: kGrey,
+        ),
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   Widget _summaryCard(_ChatMessage m) {
     final percent = ((m.confidence ?? 0) * 100).round();
@@ -480,7 +570,11 @@ class _AiChatScreenState extends State<AiChatScreen> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+<<<<<<< HEAD
         border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+        border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
@@ -536,9 +630,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                           const SizedBox(height: 6),
                           Container(
                             padding: const EdgeInsets.symmetric(
+<<<<<<< HEAD
                               horizontal: 14,
                               vertical: 6,
                             ),
+=======
+                                horizontal: 14, vertical: 6),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                             decoration: BoxDecoration(
                               color: _amberBg,
                               borderRadius: BorderRadius.circular(20),
@@ -601,6 +699,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
+<<<<<<< HEAD
  Future<String?> _askAddress() async {
     final ctrl = TextEditingController();
     String? error;
@@ -668,6 +767,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
     _scrollToBottom();
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   // ---------- Messages list ----------
   Widget _messageItem(int i) {
     final m = _messages[i];
@@ -683,6 +784,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
           isLast: isLast,
         );
       case _Role.summary:
+<<<<<<< HEAD
         return _aiRow(
           Column(
             crossAxisAlignment: CrossAxisAlignment.start,
@@ -725,6 +827,9 @@ class _AiChatScreenState extends State<AiChatScreen> {
           ),
           showAvatar: false,
         );
+=======
+        return _aiRow(_summaryCard(m), showAvatar: false);
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     }
   }
 
@@ -751,11 +856,16 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
+<<<<<<< HEAD
   Widget _roundButton(
     IconData icon,
     VoidCallback onTap, {
     bool filled = false,
   }) {
+=======
+  Widget _roundButton(IconData icon, VoidCallback onTap,
+      {bool filled = false}) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return InkWell(
       onTap: onTap,
       customBorder: const CircleBorder(),
@@ -783,6 +893,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               spacing: 12,
               runSpacing: 8,
               children: [
+<<<<<<< HEAD
                 _quickAction(
                   'Add a photo',
                   _lightBlueBg,
@@ -796,6 +907,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   _redText,
                   () => _send('It’s an emergency'),
                 ),
+=======
+                _quickAction('Add a photo', _lightBlueBg, _blueText, () {
+                  // TODO: pick photo
+                }),
+                _quickAction('It’s an emergency', _redBg, _redText,
+                    () => _send('It’s an emergency')),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ],
             ),
           ),
@@ -818,6 +936,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Describe your problem...',
+<<<<<<< HEAD
                       hintStyle: GoogleFonts.manrope(
                         fontSize: 17,
                         color: kGrey,
@@ -838,6 +957,19 @@ class _AiChatScreenState extends State<AiChatScreen> {
                     MaterialPageRoute(builder: (_) => const VoiceScreen()),
                   );
                   if (text != null && mounted) _send(text);
+=======
+                      hintStyle:
+                          GoogleFonts.manrope(fontSize: 17, color: kGrey),
+                    ),
+                  ),
+                ),
+                _roundButton(Icons.photo_camera_outlined, () {
+                  // TODO: camera
+                }),
+                const SizedBox(width: 8),
+                _roundButton(Icons.mic_none, () {
+                  // TODO: voice
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                 }),
                 const SizedBox(width: 8),
                 _roundButton(
@@ -865,6 +997,7 @@ class _AiChatScreenState extends State<AiChatScreen> {
               child: ListView.separated(
                 controller: _scrollCtrl,
                 padding: const EdgeInsets.fromLTRB(24, 24, 0, 24),
+<<<<<<< HEAD
                 itemCount: _messages.length + (_isTyping ? 1 : 0),
                 separatorBuilder: (_, _) => const SizedBox(height: 18),
                 itemBuilder: (_, i) {
@@ -879,6 +1012,13 @@ class _AiChatScreenState extends State<AiChatScreen> {
                   }
                   final m = _messages[i];
 
+=======
+                itemCount: _messages.length,
+                separatorBuilder: (_, __) => const SizedBox(height: 18),
+                itemBuilder: (_, i) {
+                  final m = _messages[i];
+                  // رسايل اليوزر محتاجة padding يمين
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   return m.role == _Role.user
                       ? Padding(
                           padding: const EdgeInsets.only(right: 24),
@@ -894,4 +1034,8 @@ class _AiChatScreenState extends State<AiChatScreen> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

@@ -1,6 +1,9 @@
 import 'package:fixly/Login/SignUpScreen.dart';
+<<<<<<< HEAD
 import 'package:fixly/core/theme/app_colors.dart';
 import 'package:fixly/core/utils/validators.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'package:fixly/home/home.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
@@ -51,6 +54,7 @@ class _LoginScreenState extends State<LoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
 
+<<<<<<< HEAD
   String? _emailError;
   String? _passError;
 
@@ -71,6 +75,8 @@ class _LoginScreenState extends State<LoginScreen> {
     );
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -78,7 +84,11 @@ class _LoginScreenState extends State<LoginScreen> {
     super.dispose();
   }
 
+<<<<<<< HEAD
   InputDecoration _decoration(String hint, IconData icon, {String? errorText}) {
+=======
+  InputDecoration _decoration(String hint, IconData icon) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     OutlineInputBorder border(Color c, [double w = 1]) => OutlineInputBorder(
           borderRadius: BorderRadius.circular(16),
           borderSide: BorderSide(color: c, width: w),
@@ -93,6 +103,7 @@ class _LoginScreenState extends State<LoginScreen> {
       contentPadding: const EdgeInsets.symmetric(vertical: 22),
       enabledBorder: border(kBorder),
       focusedBorder: border(kBlue, 1.5),
+<<<<<<< HEAD
       errorText: errorText,
       errorStyle: GoogleFonts.manrope(
         fontSize: 13,
@@ -101,6 +112,8 @@ class _LoginScreenState extends State<LoginScreen> {
       ),
       errorBorder: border(C.error),
       focusedErrorBorder: border(C.error, 1.5),
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     );
   }
 
@@ -154,6 +167,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _emailCtrl,
                       keyboardType: TextInputType.emailAddress,
                       style: GoogleFonts.manrope(fontSize: 17, color: kNavy),
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_emailError != null) {
                           setState(() => _emailError = null);
@@ -164,6 +178,10 @@ class _LoginScreenState extends State<LoginScreen> {
                         Icons.mail_outline,
                         errorText: _emailError,
                       ),
+=======
+                      decoration:
+                          _decoration('Email or phone', Icons.mail_outline),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -173,6 +191,7 @@ class _LoginScreenState extends State<LoginScreen> {
                       controller: _passCtrl,
                       obscureText: true,
                       style: GoogleFonts.manrope(fontSize: 17, color: kNavy),
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_passError != null) {
                           setState(() => _passError = null);
@@ -183,6 +202,9 @@ class _LoginScreenState extends State<LoginScreen> {
                         Icons.lock_outline,
                         errorText: _passError,
                       ),
+=======
+                      decoration: _decoration('Password', Icons.lock_outline),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
 
                     // Forgot password
@@ -209,7 +231,13 @@ class _LoginScreenState extends State<LoginScreen> {
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
+<<<<<<< HEAD
                         onPressed: _onLogin,
+=======
+                        onPressed: () {
+                          Navigator.push(context, MaterialPageRoute(builder: (context) => HomeScreen()));
+                        },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kNavy,
                           foregroundColor: Colors.white,

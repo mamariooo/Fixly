@@ -1,4 +1,5 @@
 import 'dart:ui' show PathMetric;
+<<<<<<< HEAD
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
@@ -7,6 +8,13 @@ import 'package:fixly/core/utils/validators.dart';
 import 'Login.dart';
 import 'Technician_Login.dart';
 import 'package:fixly/core/services/technician_application_store.dart';
+=======
+
+import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
+
+import 'Login.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 class TechnicianApplyScreen extends StatefulWidget {
   const TechnicianApplyScreen({super.key});
@@ -32,6 +40,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   ];
   String? _selectedSkill;
 
+<<<<<<< HEAD
   String? _idPhotoName;
   final ImagePicker _picker = ImagePicker();
   String? _nameError;
@@ -41,6 +50,10 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   String? _areaError;
   String? _idError;
   String? _passError;
+=======
+  // اسم الملف اللي المستخدم اختاره (بعد ما تربط image_picker)
+  String? _idPhotoName;
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   void dispose() {
@@ -53,6 +66,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   }
 
   OutlineInputBorder _border(Color c, [double w = 1]) => OutlineInputBorder(
+<<<<<<< HEAD
     borderRadius: BorderRadius.circular(16),
     borderSide: BorderSide(color: c, width: w),
   );
@@ -72,6 +86,15 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
       ),
       errorBorder: _border(C.error),
       focusedErrorBorder: _border(C.error, 1.5),
+=======
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: c, width: w),
+      );
+
+  InputDecoration _decoration({String? hint, Widget? prefix}) {
+    return InputDecoration(
+      hintText: hint,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       hintStyle: GoogleFonts.manrope(color: kGrey),
       prefixIcon: prefix,
       prefixIconConstraints: prefix == null
@@ -85,6 +108,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
     );
   }
 
+<<<<<<< HEAD
   TextStyle get _inputStyle => GoogleFonts.manrope(fontSize: 17, color: kNavy);
 
   Widget _label(String text) => Padding(
@@ -98,18 +122,39 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
       ),
     ),
   );
+=======
+  TextStyle get _inputStyle =>
+      GoogleFonts.manrope(fontSize: 17, color: kNavy);
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: GoogleFonts.manrope(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: kNavy,
+          ),
+        ),
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   Widget _phoneField() {
     return TextField(
       controller: _phoneCtrl,
       keyboardType: TextInputType.phone,
       style: _inputStyle,
+<<<<<<< HEAD
       onChanged: (_) {
         if (_phoneError != null) setState(() => _phoneError = null);
       },
       decoration: _decoration(
         hint: '101 234 5678',
         errorText: _phoneError,
+=======
+      decoration: _decoration(
+        hint: '101 234 5678',
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         prefix: Padding(
           padding: const EdgeInsets.only(left: 20, right: 14),
           child: Row(
@@ -134,7 +179,11 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
 
   Widget _skillDropdown() {
     return InputDecorator(
+<<<<<<< HEAD
       decoration: _decoration(errorText: _skillError).copyWith(
+=======
+      decoration: _decoration().copyWith(
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 6),
       ),
       child: DropdownButtonHideUnderline(
@@ -152,15 +201,20 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
           items: _skills
               .map((s) => DropdownMenuItem(value: s, child: Text(s)))
               .toList(),
+<<<<<<< HEAD
           onChanged: (v) => setState(() {
             _selectedSkill = v;
             _skillError = null;
           }),
+=======
+          onChanged: (v) => setState(() => _selectedSkill = v),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         ),
       ),
     );
   }
 
+<<<<<<< HEAD
   Future<void> _pickIdPhoto() async {
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
@@ -276,6 +330,15 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
           color: _idError != null ? C.error : kBorder,
           radius: 16,
         ),
+=======
+  Widget _uploadBox() {
+    return GestureDetector(
+      onTap: () {
+        // TODO: pick image (مثلاً بـ image_picker) وخزّن اسم الملف في _idPhotoName
+      },
+      child: CustomPaint(
+        painter: _DashedBorderPainter(color: kBorder, radius: 16),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         child: Container(
           width: double.infinity,
           height: 86,
@@ -283,11 +346,16 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
           alignment: Alignment.centerLeft,
           child: Row(
             children: [
+<<<<<<< HEAD
               Icon(
                 Icons.file_upload_outlined,
                 color: _idPhotoName == null ? kGrey : kNavy,
                 size: 26,
               ),
+=======
+              Icon(Icons.file_upload_outlined,
+                  color: _idPhotoName == null ? kGrey : kNavy, size: 26),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               const SizedBox(width: 16),
               Expanded(
                 child: Text(
@@ -335,6 +403,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
                               border: Border.all(
                                 color: kBorder.withValues(alpha: 0.6),
                               ),
@@ -344,6 +413,13 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                               color: kNavy,
                               size: 28,
                             ),
+=======
+                              border:
+                                  Border.all(color: kBorder.withOpacity(0.6)),
+                            ),
+                            child: const Icon(Icons.chevron_left,
+                                color: kNavy, size: 28),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                           ),
                         ),
                         const SizedBox(width: 16),
@@ -376,6 +452,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                       controller: _nameCtrl,
                       textCapitalization: TextCapitalization.words,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_nameError != null) {
                           setState(() => _nameError = null);
@@ -385,6 +462,9 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                         hint: 'Full name',
                         errorText: _nameError,
                       ),
+=======
+                      decoration: _decoration(hint: 'Full name'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                     const SizedBox(height: 20),
 
@@ -409,6 +489,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                                 controller: _yearsCtrl,
                                 keyboardType: TextInputType.number,
                                 style: _inputStyle,
+<<<<<<< HEAD
                                 onChanged: (_) {
                                   if (_yearsError != null) {
                                     setState(() => _yearsError = null);
@@ -418,6 +499,9 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                                   hint: '0',
                                   errorText: _yearsError,
                                 ),
+=======
+                                decoration: _decoration(hint: '0'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                               ),
                             ],
                           ),
@@ -431,6 +515,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                               TextField(
                                 controller: _areaCtrl,
                                 style: _inputStyle,
+<<<<<<< HEAD
                                 onChanged: (_) {
                                   if (_areaError != null) {
                                     setState(() => _areaError = null);
@@ -440,6 +525,9 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                                   hint: 'Area',
                                   errorText: _areaError,
                                 ),
+=======
+                                decoration: _decoration(hint: 'Area'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                               ),
                             ],
                           ),
@@ -450,6 +538,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
 
                     _label('National ID photo'),
                     _uploadBox(),
+<<<<<<< HEAD
                     if (_idError != null)
                       Padding(
                         padding: const EdgeInsets.only(top: 8, left: 4),
@@ -462,6 +551,8 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                           ),
                         ),
                       ),
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     const SizedBox(height: 20),
 
                     _label('Password'),
@@ -469,6 +560,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                       controller: _passCtrl,
                       obscureText: true,
                       style: _inputStyle,
+<<<<<<< HEAD
                       onChanged: (_) {
                         if (_passError != null) {
                           setState(() => _passError = null);
@@ -478,6 +570,9 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                         hint: 'At least 8 characters',
                         errorText: _passError,
                       ),
+=======
+                      decoration: _decoration(hint: 'At least 8 characters'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
 
                     const Spacer(),
@@ -487,7 +582,13 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
                       width: double.infinity,
                       height: 60,
                       child: ElevatedButton(
+<<<<<<< HEAD
                         onPressed: _submit,
+=======
+                        onPressed: () {
+                          // TODO: submit application
+                        },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                         style: ElevatedButton.styleFrom(
                           backgroundColor: kNavy,
                           foregroundColor: Colors.white,
@@ -517,6 +618,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   }
 }
 
+<<<<<<< HEAD
 class _DashedBorderPainter extends CustomPainter {
   final Color color;
   final double radius;
@@ -524,6 +626,21 @@ class _DashedBorderPainter extends CustomPainter {
   static const double dashGap = 4;
 
   _DashedBorderPainter({required this.color, this.radius = 16});
+=======
+/// بوردر متقطع (dashed) من غير أي باكدج
+class _DashedBorderPainter extends CustomPainter {
+  final Color color;
+  final double radius;
+  final double dashWidth;
+  final double dashGap;
+
+  _DashedBorderPainter({
+    required this.color,
+    this.radius = 16,
+    this.dashWidth = 6,
+    this.dashGap = 4,
+  });
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   void paint(Canvas canvas, Size size) {
@@ -533,9 +650,16 @@ class _DashedBorderPainter extends CustomPainter {
       ..strokeWidth = 1.5;
 
     final path = Path()
+<<<<<<< HEAD
       ..addRRect(
         RRect.fromRectAndRadius(Offset.zero & size, Radius.circular(radius)),
       );
+=======
+      ..addRRect(RRect.fromRectAndRadius(
+        Offset.zero & size,
+        Radius.circular(radius),
+      ));
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
     for (final PathMetric metric in path.computeMetrics()) {
       double distance = 0;
@@ -552,6 +676,10 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedBorderPainter old) =>
       old.color != color || old.radius != radius;
+<<<<<<< HEAD
 
     
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

@@ -2,25 +2,41 @@ import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
 import 'package:fixly/Login/Login.dart';
+<<<<<<< HEAD
 import 'package:fixly/core/models/booking.dart';
 import 'package:fixly/core/services/booking_store.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'ai_chat_screen.dart';
 
 const Color _iconBg = Color(0xFFDCE9FF);
 const Color _emptyIconBg = Color(0xFFF0F3F8);
 const Color _greenBg = Color(0xFFDDF3E6);
 const Color _greenText = Color(0xFF14733A);
+<<<<<<< HEAD
 const Color _amberBg = Color(0xFFFDEBC8);
 const Color _amberText = Color(0xFF8A5300);
 const Color _blueBg = Color(0xFFDCE9FF);
 const Color _blueText = Color(0xFF1B4FA8);
 const Color _redBg = Color(0xFFFDE2E1);
 const Color _redText = Color(0xFFB42318);
+=======
+
+class _Booking {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final String status;
+
+  const _Booking(this.icon, this.title, this.subtitle, this.status);
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 /// تاب "Bookings" (بيتحط جوه الـ Bottom Nav في HomeScreen)
 class BookingsTab extends StatelessWidget {
   const BookingsTab({super.key});
 
+<<<<<<< HEAD
   static const List<String> _months = [
     'Jan',
     'Feb',
@@ -79,6 +95,37 @@ class BookingsTab extends StatelessWidget {
     borderRadius: BorderRadius.circular(20),
     border: Border.all(color: kBorder.withValues(alpha: 0.7)),
   );
+=======
+  // بيانات تجريبية: استبدلها بالداتا الحقيقية
+  // سيب الـ active فاضية عشان تظهر حالة "No active booking yet"
+  static const List<_Booking> _active = [];
+
+  static const List<_Booking> _past = [
+    _Booking(Icons.water_drop_outlined, 'Kitchen sink leak',
+        'Plumbing · 28 Sep · 280 EGP', 'Completed'),
+    _Booking(Icons.bolt, 'Ceiling fan install',
+        'Electrical · 12 Sep · 220 EGP', 'Completed'),
+  ];
+
+  Widget _sectionLabel(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 12),
+        child: Text(
+          text,
+          style: GoogleFonts.manrope(
+            fontSize: 14,
+            fontWeight: FontWeight.w800,
+            letterSpacing: 1.1,
+            color: kGrey,
+          ),
+        ),
+      );
+
+  BoxDecoration _cardDecoration() => BoxDecoration(
+        color: Colors.white,
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: kBorder.withOpacity(0.7)),
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   Widget _emptyActiveCard(BuildContext context) {
     return Container(
@@ -144,6 +191,7 @@ class BookingsTab extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
   Widget _bookingCard(BuildContext context, Booking b) {
     final (bg, fg) = _statusColors(b.status);
     final priceText = b.price == null ? '' : ' · ${b.price} EGP';
@@ -241,6 +289,58 @@ class BookingsTab extends StatelessWidget {
               fontSize: 16,
               fontWeight: current ? FontWeight.w800 : FontWeight.w600,
               color: done ? kNavy : kGrey,
+=======
+  Widget _bookingCard(_Booking b) {
+    return Container(
+      padding: const EdgeInsets.all(14),
+      decoration: _cardDecoration(),
+      child: Row(
+        children: [
+          Container(
+            width: 66,
+            height: 66,
+            decoration: BoxDecoration(
+              color: _iconBg,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Icon(b.icon, color: kBlue, size: 26),
+          ),
+          const SizedBox(width: 14),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  b.title,
+                  style: GoogleFonts.manrope(
+                    fontSize: 19,
+                    fontWeight: FontWeight.w800,
+                    color: kNavy,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                Text(
+                  b.subtitle,
+                  style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
+                ),
+              ],
+            ),
+          ),
+          const SizedBox(width: 8),
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
+            decoration: BoxDecoration(
+              color: _greenBg,
+              borderRadius: BorderRadius.circular(20),
+            ),
+            child: Text(
+              b.status,
+              style: GoogleFonts.manrope(
+                fontSize: 15,
+                fontWeight: FontWeight.w800,
+                color: _greenText,
+              ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
           ),
         ],
@@ -248,6 +348,7 @@ class BookingsTab extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
   Widget _detailsSheet(BuildContext context, Booking b) {
     final cancelled = b.status == BookingStatus.cancelled;
     final canCancel =
@@ -502,3 +603,42 @@ class BookingsTab extends StatelessWidget {
     );
   }
 }
+=======
+  @override
+  Widget build(BuildContext context) {
+    return SingleChildScrollView(
+      padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Text(
+            'Bookings',
+            style: GoogleFonts.manrope(
+              fontSize: 34,
+              fontWeight: FontWeight.w800,
+              color: kNavy,
+            ),
+          ),
+          const SizedBox(height: 16),
+
+          _sectionLabel('ACTIVE'),
+          if (_active.isEmpty)
+            _emptyActiveCard(context)
+          else
+            ..._active.map((b) => Padding(
+                  padding: const EdgeInsets.only(bottom: 12),
+                  child: _bookingCard(b),
+                )),
+          const SizedBox(height: 28),
+
+          _sectionLabel('PAST'),
+          ..._past.map((b) => Padding(
+                padding: const EdgeInsets.only(bottom: 14),
+                child: _bookingCard(b),
+              )),
+        ],
+      ),
+    );
+  }
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

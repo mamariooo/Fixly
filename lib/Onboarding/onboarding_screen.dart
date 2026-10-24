@@ -23,10 +23,15 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
   void _goToLogin() {
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
+<<<<<<< HEAD
         pageBuilder: (_, _, _) {
           return const LoginScreen();
         },
         transitionsBuilder: (_, a, _, child) => FadeTransition(
+=======
+        pageBuilder: (_, __, ___) => const LoginScreen(),
+        transitionsBuilder: (_, a, __, child) => FadeTransition(
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
           opacity: a,
           child: SlideTransition(
             position: Tween(begin: const Offset(0, .04), end: Offset.zero)

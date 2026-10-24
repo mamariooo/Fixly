@@ -5,7 +5,10 @@ import 'package:fixly/main.dart' show appLocale;
 import 'package:fixly/core/utils/validators.dart';
 import 'admin_home.dart';
 import 'admin_theme.dart';
+<<<<<<< HEAD
 import 'package:fixly/core/config/admin_config.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 /// Admin sign in: work email + password + 6-digit two-step code.
 class AdminLoginScreen extends StatefulWidget {
@@ -43,6 +46,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   void _onSignIn() {
+<<<<<<< HEAD
     var emailError = Validators.email(_emailCtrl.text);
     if (emailError == null && !isAdminEmail(_emailCtrl.text)) {
       emailError = tr(
@@ -50,6 +54,9 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         'هذا البريد غير مصرّح له',
       );
     }
+=======
+    final emailError = Validators.email(_emailCtrl.text);
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     final passError = Validators.password(_passCtrl.text);
     final codeError = _codeCtrl.text.length == 6
         ? null
@@ -86,12 +93,17 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         const SizedBox(width: 12),
         Text(
           'Fixly',
+<<<<<<< HEAD
           style: aText(
             26,
             weight: FontWeight.w800,
             color: Colors.white,
             letterSpacing: -0.5,
           ),
+=======
+          style: aText(26,
+              weight: FontWeight.w800, color: Colors.white, letterSpacing: -0.5),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         ),
         const SizedBox(width: 10),
         Container(
@@ -113,6 +125,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
       color: A.navy,
       padding: compact
           ? EdgeInsets.fromLTRB(
+<<<<<<< HEAD
               24,
               20 + MediaQuery.of(context).padding.top,
               24,
@@ -123,6 +136,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
         mainAxisAlignment: compact
             ? MainAxisAlignment.start
             : MainAxisAlignment.spaceBetween,
+=======
+              24, 20 + MediaQuery.of(context).padding.top, 24, 32)
+          : const EdgeInsets.all(64),
+      child: Column(
+        mainAxisAlignment:
+            compact ? MainAxisAlignment.start : MainAxisAlignment.spaceBetween,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         crossAxisAlignment: CrossAxisAlignment.start,
         mainAxisSize: compact ? MainAxisSize.min : MainAxisSize.max,
         children: [
@@ -173,6 +193,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   }
 
   Widget _label(String text) => Padding(
+<<<<<<< HEAD
     padding: const EdgeInsets.only(bottom: 8),
     child: Text(text, style: aText(13)),
   );
@@ -187,6 +208,18 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     String? errorText,
     Widget? suffix,
   }) {
+=======
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(text, style: aText(13)),
+      );
+
+  OutlineInputBorder _border(Color c, [double w = 1]) => OutlineInputBorder(
+        borderRadius: BorderRadius.circular(14),
+        borderSide: BorderSide(color: c, width: w),
+      );
+
+  InputDecoration _decoration(String hint, {String? errorText, Widget? suffix}) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return InputDecoration(
       hintText: hint,
       hintStyle: aText(15, weight: FontWeight.w500, color: A.grey),
@@ -228,8 +261,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                           color: _codeError != null
                               ? A.red
                               : (focused && i == active)
+<<<<<<< HEAD
                               ? A.blue
                               : A.inputBorder,
+=======
+                                  ? A.blue
+                                  : A.inputBorder,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                           width: (focused && i == active) ? 1.5 : 1,
                         ),
                         boxShadow: (focused && i == active)
@@ -287,12 +325,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
             'Use your company email. Customers and technicians cannot sign in here.',
             'استخدم بريد الشركة. لا يمكن للعملاء والفنيين تسجيل الدخول من هنا.',
           ),
+<<<<<<< HEAD
           style: aText(
             15,
             weight: FontWeight.w500,
             color: A.grey,
             height: 1.45,
           ),
+=======
+          style: aText(15, weight: FontWeight.w500, color: A.grey, height: 1.45),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         ),
         const SizedBox(height: 24),
         _label(tr('Work email', 'بريد العمل')),
@@ -365,6 +407,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
           child: GestureDetector(
             onTap: () => showAdminToast(
               context,
+<<<<<<< HEAD
               tr(
                 'Contact IT: it@fixly.com',
                 'تواصل مع قسم تقنية المعلومات: it@fixly.com',
@@ -375,6 +418,13 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
                 'Contact IT if you lost access',
                 'تواصل مع الدعم التقني إذا فقدت الوصول',
               ),
+=======
+              tr('Contact IT: it@fixly.com', 'تواصل مع قسم تقنية المعلومات: it@fixly.com'),
+            ),
+            child: Text(
+              tr('Contact IT if you lost access',
+                  'تواصل مع الدعم التقني إذا فقدت الوصول'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               textAlign: TextAlign.center,
               style: aText(13, color: A.linkBlue),
             ),
@@ -392,12 +442,16 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
               'Access is granted by invitation. Roles: Super admin, Support, Finance.',
               'يتم منح الوصول بدعوة فقط. الأدوار: مشرف رئيسي، دعم، مالية.',
             ),
+<<<<<<< HEAD
             style: aText(
               12,
               weight: FontWeight.w600,
               color: A.warnText,
               height: 1.5,
             ),
+=======
+            style: aText(12, weight: FontWeight.w600, color: A.warnText, height: 1.5),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
           ),
         ),
       ],
@@ -408,7 +462,11 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale>(
       valueListenable: appLocale,
+<<<<<<< HEAD
       builder: (context, _, _) {
+=======
+      builder: (context, _, __) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         return Scaffold(
           backgroundColor: A.bg,
           body: LayoutBuilder(

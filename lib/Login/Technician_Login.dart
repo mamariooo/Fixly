@@ -2,15 +2,26 @@ import 'package:fixly/Login/Signup_Technician.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
+<<<<<<< HEAD
 import 'package:fixly/Login/Login.dart';
 import 'package:fixly/core/theme/app_colors.dart';
 import 'package:fixly/core/utils/validators.dart';
 import 'package:fixly/core/utils/forgot_password.dart';
 import 'package:fixly/core/services/technician_application_store.dart';
+=======
+
+
+
+import 'package:fixly/Login/Login.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 import 'package:fixly/home/Dashboard_Technician/home_Technicaian.dart'
     hide kGrey, kBorder, kBlue, kNavy, kBg;
 
+<<<<<<< HEAD
+=======
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 const Color kCyan = Color(0xFF14B8D6);
 const Color kHeaderSubtitle = Color(0xFF9DB0D3);
 
@@ -25,6 +36,7 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
 
+<<<<<<< HEAD
   String? _emailError;
   String? _passError;
 
@@ -57,6 +69,8 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
     );
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   @override
   void dispose() {
     _emailCtrl.dispose();
@@ -65,11 +79,19 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
   }
 
   OutlineInputBorder _border(Color c, [double w = 1]) => OutlineInputBorder(
+<<<<<<< HEAD
     borderRadius: BorderRadius.circular(16),
     borderSide: BorderSide(color: c, width: w),
   );
 
   InputDecoration _decoration(String hint, {String? errorText}) {
+=======
+        borderRadius: BorderRadius.circular(16),
+        borderSide: BorderSide(color: c, width: w),
+      );
+
+  InputDecoration _decoration(String hint) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     return InputDecoration(
       hintText: hint,
       hintStyle: GoogleFonts.manrope(color: kGrey),
@@ -78,6 +100,7 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
       enabledBorder: _border(kBorder),
       focusedBorder: _border(kBlue, 1.5),
+<<<<<<< HEAD
       errorText: errorText,
       errorStyle: GoogleFonts.manrope(
         fontSize: 13,
@@ -102,6 +125,25 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
       ),
     ),
   );
+=======
+    );
+  }
+
+  TextStyle get _inputStyle =>
+      GoogleFonts.manrope(fontSize: 17, color: kNavy);
+
+  Widget _label(String text) => Padding(
+        padding: const EdgeInsets.only(bottom: 8),
+        child: Text(
+          text,
+          style: GoogleFonts.manrope(
+            fontSize: 15,
+            fontWeight: FontWeight.w700,
+            color: kNavy,
+          ),
+        ),
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   /// الهيدر الغامق: لوجو + PRO + العنوان
   /// استبدل الـ Container الأبيض باللوجو بتاعك لو عاوز
@@ -144,10 +186,15 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                 ),
                 const SizedBox(width: 12),
                 Container(
+<<<<<<< HEAD
                   padding: const EdgeInsets.symmetric(
                     horizontal: 14,
                     vertical: 6,
                   ),
+=======
+                  padding:
+                      const EdgeInsets.symmetric(horizontal: 14, vertical: 6),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   decoration: BoxDecoration(
                     color: kCyan,
                     borderRadius: BorderRadius.circular(20),
@@ -175,7 +222,14 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
             const SizedBox(height: 12),
             Text(
               'Log in to receive jobs near you.',
+<<<<<<< HEAD
               style: GoogleFonts.manrope(fontSize: 17, color: kHeaderSubtitle),
+=======
+              style: GoogleFonts.manrope(
+                fontSize: 17,
+                color: kHeaderSubtitle,
+              ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
           ],
         ),
@@ -209,6 +263,7 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                             controller: _emailCtrl,
                             keyboardType: TextInputType.emailAddress,
                             style: _inputStyle,
+<<<<<<< HEAD
                             onChanged: (_) {
                               if (_emailError != null) {
                                 setState(() => _emailError = null);
@@ -218,6 +273,9 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                               'Email or phone',
                               errorText: _emailError,
                             ),
+=======
+                            decoration: _decoration('Email or phone'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                           ),
                           const SizedBox(height: 20),
 
@@ -226,6 +284,7 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                             controller: _passCtrl,
                             obscureText: true,
                             style: _inputStyle,
+<<<<<<< HEAD
                             onChanged: (_) {
                               if (_passError != null) {
                                 setState(() => _passError = null);
@@ -235,13 +294,22 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                               'Password',
                               errorText: _passError,
                             ),
+=======
+                            decoration: _decoration('Password'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                           ),
 
                           Align(
                             alignment: Alignment.centerRight,
                             child: TextButton(
+<<<<<<< HEAD
                               onPressed: () =>
                                   showForgotPasswordDialog(context),
+=======
+                              onPressed: () {
+                                // TODO: forgot password
+                              },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                               child: Text(
                                 'Forgot password?',
                                 style: GoogleFonts.manrope(
@@ -258,7 +326,14 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                             width: double.infinity,
                             height: 60,
                             child: ElevatedButton(
+<<<<<<< HEAD
                               onPressed: _onLogin,
+=======
+                              onPressed: () {
+
+                       Navigator.push(context, MaterialPageRoute(builder: (context)=>TechnicianHomeScreen()));
+                              },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                               style: ElevatedButton.styleFrom(
                                 backgroundColor: kNavy,
                                 foregroundColor: Colors.white,
@@ -284,6 +359,7 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                               padding: const EdgeInsets.symmetric(vertical: 24),
                               child: GestureDetector(
                                 onTap: () {
+<<<<<<< HEAD
                                   Navigator.push(
                                     context,
                                     MaterialPageRoute(
@@ -291,6 +367,11 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
                                           TechnicianApplyScreen(),
                                     ),
                                   );
+=======
+
+                    Navigator.push(context, MaterialPageRoute(builder: (context)=>TechnicianApplyScreen()));
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                                 },
                                 child: Text(
                                   'New technician? Apply to join',
@@ -315,4 +396,8 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

@@ -1,12 +1,15 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fixly/Login/Login.dart';
+<<<<<<< HEAD
 import 'package:fixly/main.dart' show appLocale, changeLanguage;
 import 'package:fixly/core/services/mock_session.dart';
 import 'package:fixly/core/utils/validators.dart';
 import 'Profile_pages.dart';
 import 'notification_screen.dart';
 import 'package:fixly/core/services/notification_store.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 const Color _iconBg = Color(0xFFDCE9FF);
 const Color _avatarText = Color(0xFF1B4FA8);
@@ -23,11 +26,19 @@ class ProfileTab extends StatefulWidget {
 }
 
 class _ProfileTabState extends State<ProfileTab> {
+<<<<<<< HEAD
   String _name = MockSession.name ?? 'Mario Wageh';
   String _phone = MockSession.phone ?? '1153145920'; // أرقام بس
   String get _phoneDisplay => '+20 ${_phone.replaceFirst(RegExp(r'^0'), '')}';
 
   String _language = appLocale.value.languageCode == 'ar' ? 'AR' : 'EN';
+=======
+  // بيانات تجريبية: استبدلها ببيانات المستخدم الحقيقية
+  final String _name = 'Mario Wageh';
+  final String _phone = '+20 1153 14 5920';
+
+  String _language = 'EN';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   String get _initials {
     final parts = _name.trim().split(RegExp(r'\s+'));
@@ -35,13 +46,18 @@ class _ProfileTabState extends State<ProfileTab> {
   }
 
   void _logout() {
+<<<<<<< HEAD
     MockSession.clear();
+=======
+    // TODO: امسح بيانات الجلسة/التوكن هنا
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
     Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const LoginScreen()),
       (route) => false,
     );
   }
 
+<<<<<<< HEAD
   void _comingSoon(String title) {
     ScaffoldMessenger.of(
       context,
@@ -117,6 +133,8 @@ class _ProfileTabState extends State<ProfileTab> {
     }
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   // ---------- Pieces ----------
   Widget _iconBox(IconData icon, {Color bg = _iconBg, Color fg = kBlue}) {
     return Container(
@@ -170,11 +188,15 @@ class _ProfileTabState extends State<ProfileTab> {
           ),
         ),
         if (showDivider)
+<<<<<<< HEAD
           Divider(
             height: 1,
             thickness: 1,
             color: kBorder.withValues(alpha: 0.5),
           ),
+=======
+          Divider(height: 1, thickness: 1, color: kBorder.withOpacity(0.5)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ],
     );
   }
@@ -184,7 +206,11 @@ class _ProfileTabState extends State<ProfileTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(22),
+<<<<<<< HEAD
         border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+        border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(children: children),
@@ -197,7 +223,11 @@ class _ProfileTabState extends State<ProfileTab> {
       return GestureDetector(
         onTap: () {
           setState(() => _language = code);
+<<<<<<< HEAD
           changeLanguage(code.toLowerCase());
+=======
+          // TODO: غيّر لغة التطبيق هنا (Locale)
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         },
         child: AnimatedContainer(
           duration: const Duration(milliseconds: 200),
@@ -223,7 +253,11 @@ class _ProfileTabState extends State<ProfileTab> {
       decoration: BoxDecoration(
         color: Colors.white,
         borderRadius: BorderRadius.circular(34),
+<<<<<<< HEAD
         border: Border.all(color: kBorder.withValues(alpha: 0.8)),
+=======
+        border: Border.all(color: kBorder.withOpacity(0.8)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
@@ -267,7 +301,11 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               const SizedBox(height: 2),
               Text(
+<<<<<<< HEAD
                 _phoneDisplay,
+=======
+                _phone,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                 style: GoogleFonts.manrope(
                   fontSize: 16,
                   fontWeight: FontWeight.w600,
@@ -276,7 +314,13 @@ class _ProfileTabState extends State<ProfileTab> {
               ),
               const SizedBox(height: 6),
               GestureDetector(
+<<<<<<< HEAD
                 onTap: _editProfile,
+=======
+                onTap: () {
+                  // TODO: open edit profile
+                },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                 child: Text(
                   'Edit profile',
                   style: GoogleFonts.manrope(
@@ -307,25 +351,41 @@ class _ProfileTabState extends State<ProfileTab> {
             _tile(
               icon: Icons.location_on_outlined,
               title: 'Saved Locations',
+<<<<<<< HEAD
               onTap: () => _comingSoon('Saved Locations'),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             _tile(
               icon: Icons.credit_card_outlined,
               title: 'Payment Methods',
+<<<<<<< HEAD
               onTap: () => _comingSoon('Payment Methods'),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             _tile(
               icon: Icons.history,
               title: 'Service History',
+<<<<<<< HEAD
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const ServiceHistoryScreen()),
               ),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             _tile(
               icon: Icons.favorite_border,
               title: 'Favorites',
+<<<<<<< HEAD
               onTap: () => _comingSoon('favorite_border'),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               showDivider: false,
             ),
           ]),
@@ -335,6 +395,7 @@ class _ProfileTabState extends State<ProfileTab> {
             _tile(
               icon: Icons.notifications_none,
               title: 'Notifications',
+<<<<<<< HEAD
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(
@@ -343,6 +404,9 @@ class _ProfileTabState extends State<ProfileTab> {
                   ),
                 ),
               ),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             _tile(
               icon: Icons.language,
@@ -352,18 +416,26 @@ class _ProfileTabState extends State<ProfileTab> {
             _tile(
               icon: Icons.settings_outlined,
               title: 'Settings',
+<<<<<<< HEAD
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const SettingsScreen()),
               ),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             _tile(
               icon: Icons.help_outline,
               title: 'Help & Support',
+<<<<<<< HEAD
               onTap: () => Navigator.push(
                 context,
                 MaterialPageRoute(builder: (_) => const HelpSupportScreen()),
               ),
+=======
+              onTap: () {/* TODO */},
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               showDivider: false,
             ),
           ]),
@@ -385,4 +457,8 @@ class _ProfileTabState extends State<ProfileTab> {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

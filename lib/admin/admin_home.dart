@@ -5,9 +5,14 @@ import 'package:fixly/Splash/welcome_to_fixly.dart';
 import 'admin_ai_monitoring.dart';
 import 'admin_dashboard.dart';
 import 'admin_theme.dart';
+<<<<<<< HEAD
 import 'admin_technician.dart';
 
 enum AdminPage { dashboard, technicians, aiMonitoring }
+=======
+
+enum AdminPage { dashboard, aiMonitoring }
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 class _NavItem {
   final IconData icon;
@@ -20,6 +25,7 @@ class _NavItem {
 }
 
 const _navItems = <_NavItem>[
+<<<<<<< HEAD
   _NavItem(
     Icons.grid_view_rounded,
     'Dashboard',
@@ -28,12 +34,18 @@ const _navItems = <_NavItem>[
   ),
   _NavItem(Icons.person_outline_rounded, 'Customers', 'العملاء', null),
   _NavItem(Icons.build_outlined, 'Technicians', 'الفنيون', AdminPage.technicians),
+=======
+  _NavItem(Icons.grid_view_rounded, 'Dashboard', 'لوحة التحكم', AdminPage.dashboard),
+  _NavItem(Icons.person_outline_rounded, 'Customers', 'العملاء', null),
+  _NavItem(Icons.build_outlined, 'Technicians', 'الفنيون', null),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   _NavItem(Icons.calendar_today_outlined, 'Bookings', 'الحجوزات', null),
   _NavItem(Icons.format_list_bulleted_rounded, 'Services', 'الخدمات', null),
   _NavItem(Icons.warning_amber_rounded, 'Complaints', 'الشكاوى', null),
   _NavItem(Icons.payments_outlined, 'Payments', 'المدفوعات', null),
   _NavItem(Icons.star_outline_rounded, 'Reviews', 'التقييمات', null),
   _NavItem(Icons.bar_chart_rounded, 'Analytics', 'التحليلات', null),
+<<<<<<< HEAD
   _NavItem(
     Icons.auto_awesome_outlined,
     'AI Monitoring',
@@ -41,6 +53,11 @@ const _navItems = <_NavItem>[
     AdminPage.aiMonitoring,
     accent: true,
   ),
+=======
+  _NavItem(Icons.auto_awesome_outlined, 'AI Monitoring', 'مراقبة الذكاء الاصطناعي',
+      AdminPage.aiMonitoring,
+      accent: true),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   _NavItem(Icons.settings_outlined, 'Settings', 'الإعدادات', null),
 ];
 
@@ -92,6 +109,7 @@ class _AdminHomeState extends State<AdminHome> {
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(12),
                       ),
+<<<<<<< HEAD
                       child: const Icon(
                         Icons.build_rounded,
                         color: A.navy,
@@ -117,6 +135,19 @@ class _AdminHomeState extends State<AdminHome> {
                         letterSpacing: 1,
                       ),
                     ),
+=======
+                      child: const Icon(Icons.build_rounded, color: A.navy, size: 18),
+                    ),
+                    const SizedBox(width: 10),
+                    Text('Fixly',
+                        style: aText(20, color: Colors.white, letterSpacing: -0.4)),
+                    const SizedBox(width: 8),
+                    Text('ADMIN',
+                        style: aText(10,
+                            weight: FontWeight.w800,
+                            color: A.cyan,
+                            letterSpacing: 1)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ],
                 ),
               ),
@@ -138,10 +169,15 @@ class _AdminHomeState extends State<AdminHome> {
                             } else {
                               showAdminToast(
                                 context,
+<<<<<<< HEAD
                                 tr(
                                   'Not part of this prototype',
                                   'غير متاحة في هذه النسخة التجريبية',
                                 ),
+=======
+                                tr('Not part of this prototype',
+                                    'غير متاحة في هذه النسخة التجريبية'),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                               );
                             }
                           },
@@ -168,11 +204,16 @@ class _AdminHomeState extends State<AdminHome> {
   Widget build(BuildContext context) {
     return ValueListenableBuilder<Locale>(
       valueListenable: appLocale,
+<<<<<<< HEAD
       builder: (context, _, _) {
+=======
+      builder: (context, _, __) {
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         return LayoutBuilder(
           builder: (context, c) {
             final wide = c.maxWidth >= 900;
 
+<<<<<<< HEAD
             final VoidCallback? menu =
                 wide ? null : () => _scaffoldKey.currentState?.openDrawer();
 
@@ -188,6 +229,15 @@ class _AdminHomeState extends State<AdminHome> {
                 content = AdminAiMonitoringPage(onOpenMenu: menu);
                 break;
             }
+=======
+            final content = _page == AdminPage.dashboard
+                ? AdminDashboardPage(
+                    onOpenMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
+                  )
+                : AdminAiMonitoringPage(
+                    onOpenMenu: wide ? null : () => _scaffoldKey.currentState?.openDrawer(),
+                  );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
             return Scaffold(
               key: _scaffoldKey,
@@ -284,6 +334,7 @@ class AdminPageHeader extends StatelessWidget {
   });
 
   Widget _menuButton() => Material(
+<<<<<<< HEAD
     color: Colors.white,
     shape: RoundedRectangleBorder(
       borderRadius: BorderRadius.circular(12),
@@ -319,6 +370,35 @@ class AdminPageHeader extends StatelessWidget {
       ),
     ],
   );
+=======
+        color: Colors.white,
+        shape: RoundedRectangleBorder(
+          borderRadius: BorderRadius.circular(12),
+          side: const BorderSide(color: A.border),
+        ),
+        child: InkWell(
+          borderRadius: BorderRadius.circular(12),
+          onTap: onOpenMenu,
+          child: const SizedBox(
+            width: 44,
+            height: 44,
+            child: Icon(Icons.menu_rounded, color: A.navy),
+          ),
+        ),
+      );
+
+  Widget _titles() => Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisSize: MainAxisSize.min,
+        children: [
+          Text(title,
+              style: aText(28,
+                  weight: FontWeight.w800, height: 1.3, letterSpacing: -0.5)),
+          Text(subtitle,
+              style: aText(14, weight: FontWeight.w600, color: A.grey)),
+        ],
+      );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   Widget build(BuildContext context) {
@@ -370,11 +450,15 @@ class LanguageToggle extends StatelessWidget {
           ),
           child: Text(
             label,
+<<<<<<< HEAD
             style: aText(
               12,
               weight: FontWeight.w800,
               color: on ? Colors.white : A.grey,
             ),
+=======
+            style: aText(12, weight: FontWeight.w800, color: on ? Colors.white : A.grey),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
           ),
         ),
       );

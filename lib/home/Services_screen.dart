@@ -70,7 +70,11 @@ class ServicesTab extends StatelessWidget {
                   decoration: BoxDecoration(
                     color: Colors.white,
                     borderRadius: BorderRadius.circular(20),
+<<<<<<< HEAD
                     border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+                    border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ),
                   child: Column(
                     mainAxisAlignment: MainAxisAlignment.center,

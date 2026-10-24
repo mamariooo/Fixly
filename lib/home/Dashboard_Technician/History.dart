@@ -1,7 +1,12 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+<<<<<<< HEAD
 import 'package:fixly/Login/Login.dart';
 import 'package:fixly/core/services/booking_store.dart';
+=======
+
+import 'package:fixly/Login/Login.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 TextStyle _text(double size, FontWeight weight, Color color) {
   return GoogleFonts.cairo(fontSize: size, fontWeight: weight, color: color);
@@ -10,6 +15,15 @@ TextStyle _text(double size, FontWeight weight, Color color) {
 class JobsTab extends StatelessWidget {
   const JobsTab({super.key});
 
+<<<<<<< HEAD
+=======
+  static const List<List<String>> jobs = [
+    ['التكييف مش بيبرّد', 'سارة م. · النهاردة', '480'],
+    ['غسالة', 'منى أ. · امبارح', '320'],
+    ['تركيب تكييف سبليت', 'عمرو ك. · ٨ أكتوبر', '260'],
+  ];
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   Widget jobCard(String title, String subtitle, String price) {
     return Container(
       margin: const EdgeInsets.only(bottom: 14),
@@ -50,18 +64,28 @@ class JobsTab extends StatelessWidget {
               Text('$price ج.م', style: _text(17, FontWeight.w800, kNavy)),
               const SizedBox(height: 6),
               Container(
+<<<<<<< HEAD
                 padding: const EdgeInsets.symmetric(
                   horizontal: 14,
                   vertical: 2,
                 ),
+=======
+                padding:
+                    const EdgeInsets.symmetric(horizontal: 14, vertical: 2),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                 decoration: BoxDecoration(
                   color: const Color(0xFFDDF3E6),
                   borderRadius: BorderRadius.circular(20),
                 ),
+<<<<<<< HEAD
                 child: Text(
                   'مكتملة',
                   style: _text(13, FontWeight.w800, const Color(0xFF14733A)),
                 ),
+=======
+                child: Text('مكتملة',
+                    style: _text(13, FontWeight.w800, const Color(0xFF14733A))),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ),
             ],
           ),
@@ -70,6 +94,7 @@ class JobsTab extends StatelessWidget {
     );
   }
 
+<<<<<<< HEAD
 static const List<String> _months = [
     'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
     'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
@@ -77,11 +102,14 @@ static const List<String> _months = [
 
   String _date(DateTime d) => '${d.day} ${_months[d.month - 1]}';
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   @override
   Widget build(BuildContext context) {
     return Directionality(
       textDirection: TextDirection.rtl,
       child: SafeArea(
+<<<<<<< HEAD
         child: ListenableBuilder(
           listenable: BookingStore.instance,
           builder: (context, _) {
@@ -107,9 +135,22 @@ static const List<String> _months = [
               ],
             );
           },
+=======
+        child: ListView(
+          padding: const EdgeInsets.all(24),
+          children: [
+            Text('سجل الشغل', style: _text(30, FontWeight.w800, kNavy)),
+            const SizedBox(height: 16),
+            for (final job in jobs) jobCard(job[0], job[1], job[2]),
+          ],
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
         ),
       ),
     );
   }
+<<<<<<< HEAD
 }
 
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

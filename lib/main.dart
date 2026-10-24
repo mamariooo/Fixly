@@ -3,7 +3,12 @@ import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:fixly/Splash/Splash.dart';
 
+<<<<<<< HEAD
 final ValueNotifier<Locale> appLocale = ValueNotifier(const Locale('en'));
+=======
+final ValueNotifier<Locale> appLocale =
+    ValueNotifier(const Locale('en'));
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 void changeLanguage(String languageCode) {
   if (languageCode != 'ar' && languageCode != 'en') {
@@ -34,7 +39,14 @@ class MyApp extends StatelessWidget {
           title: 'Fixly',
           locale: locale,
 
+<<<<<<< HEAD
           supportedLocales: const [Locale('en'), Locale('ar')],
+=======
+          supportedLocales: const [
+            Locale('en'),
+            Locale('ar'),
+          ],
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
           // إعدادات الترجمة الداخلية في Flutter
           localizationsDelegates: const [
@@ -53,7 +65,12 @@ class MyApp extends StatelessWidget {
 
           builder: (context, child) {
             return Directionality(
+<<<<<<< HEAD
               textDirection: isArabic ? TextDirection.rtl : TextDirection.ltr,
+=======
+              textDirection:
+                  isArabic ? TextDirection.rtl : TextDirection.ltr,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               child: child ?? const SizedBox.shrink(),
             );
           },
@@ -63,4 +80,8 @@ class MyApp extends StatelessWidget {
       },
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

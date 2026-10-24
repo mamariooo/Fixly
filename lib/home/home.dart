@@ -3,8 +3,13 @@ import 'package:fixly/home/BookingsTab.dart';
 import 'package:fixly/home/MessagesTab.dart';
 import 'package:fixly/home/ProfileTab.dart';
 import 'package:fixly/home/Services_screen.dart';
+<<<<<<< HEAD
 import 'package:fixly/home/voice_screen.dart';
 import 'package:fixly/home/ai_chat_screen.dart';
+=======
+import 'package:fixly/home/ai_chat_screen.dart';
+import 'package:fixly/home/voice_screen.dart';
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
@@ -25,6 +30,7 @@ class HomeScreen extends StatefulWidget {
 
 class _HomeScreenState extends State<HomeScreen> {
   int _index = 0;
+<<<<<<< HEAD
   final List<Widget> _pages = [
     const HomeTab(),
     const ServicesTab(),
@@ -32,6 +38,15 @@ class _HomeScreenState extends State<HomeScreen> {
     const MessagesTab(),
     const ProfileTab(),
   ];
+=======
+final List<Widget> _pages = [
+  const HomeTab(),
+  const ServicesTab(),
+  const BookingsTab(),
+  const MessagesTab(),
+  const ProfileTab(),
+];
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
   @override
   Widget build(BuildContext context) {
@@ -95,9 +110,14 @@ class _BottomNav extends StatelessWidget {
                           _items[i].$2,
                           style: GoogleFonts.manrope(
                             fontSize: 13,
+<<<<<<< HEAD
                             fontWeight: selected
                                 ? FontWeight.w800
                                 : FontWeight.w600,
+=======
+                            fontWeight:
+                                selected ? FontWeight.w800 : FontWeight.w600,
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                             color: color,
                           ),
                         ),
@@ -131,6 +151,7 @@ class HomeTab extends StatelessWidget {
           const SizedBox(height: 24),
           const _AiCard(),
           const SizedBox(height: 28),
+<<<<<<< HEAD
           _SectionTitle(
             title: 'Popular Services',
             action: 'See all',
@@ -144,6 +165,14 @@ class HomeTab extends StatelessWidget {
             action: 'History',
             onTap: () {},
           ),
+=======
+          _SectionTitle(title: 'Popular Services', action: 'See all', onTap: () {
+          }),
+          const SizedBox(height: 14),
+          const _PopularServices(),
+          const SizedBox(height: 28),
+          _SectionTitle(title: 'Recent Services', action: 'History', onTap: () {}),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
           const SizedBox(height: 14),
           const _RecentServiceCard(
             icon: Icons.water_drop_outlined,
@@ -193,11 +222,15 @@ class _Header extends StatelessWidget {
               const SizedBox(height: 4),
               Row(
                 children: [
+<<<<<<< HEAD
                   const Icon(
                     Icons.location_on_outlined,
                     color: kGrey,
                     size: 18,
                   ),
+=======
+                  const Icon(Icons.location_on_outlined, color: kGrey, size: 18),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   const SizedBox(width: 6),
                   Flexible(
                     child: Text(
@@ -221,6 +254,7 @@ class _Header extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
+<<<<<<< HEAD
                 border: Border.all(color: kBorder.withValues(alpha: 0.6)),
               ),
               child: const Icon(
@@ -228,6 +262,12 @@ class _Header extends StatelessWidget {
                 color: kNavy,
                 size: 26,
               ),
+=======
+                border: Border.all(color: kBorder.withOpacity(0.6)),
+              ),
+              child: const Icon(Icons.notifications_none,
+                  color: kNavy, size: 26),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             Positioned(
               top: 13,
@@ -249,6 +289,7 @@ class _Header extends StatelessWidget {
 }
 
 // ---------- AI Card ----------
+<<<<<<< HEAD
 class _AiCard extends StatefulWidget {
   const _AiCard();
 
@@ -284,6 +325,11 @@ class _AiCardState extends State<_AiCard> {
     if (text != null && mounted) _openChat(text);
   }
 
+=======
+class _AiCard extends StatelessWidget {
+  const _AiCard();
+
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   Widget _actionButton(IconData icon, String label, VoidCallback onTap) {
     return Expanded(
       child: InkWell(
@@ -359,22 +405,36 @@ class _AiCardState extends State<_AiCard> {
               children: [
                 Expanded(
                   child: TextField(
+<<<<<<< HEAD
                     controller: _ctrl,
                     textInputAction: TextInputAction.send,
                     onSubmitted: _openChat,
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     style: GoogleFonts.manrope(fontSize: 17, color: kNavy),
                     decoration: InputDecoration(
                       border: InputBorder.none,
                       hintText: 'Describe your problem...',
+<<<<<<< HEAD
                       hintStyle: GoogleFonts.manrope(
                         fontSize: 17,
                         color: kGrey,
                       ),
+=======
+                      hintStyle:
+                          GoogleFonts.manrope(fontSize: 17, color: kGrey),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     ),
                   ),
                 ),
                 InkWell(
+<<<<<<< HEAD
                   onTap: () => _openChat(_ctrl.text),
+=======
+                  onTap: () {
+                    // TODO: send problem description
+                  },
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   borderRadius: BorderRadius.circular(14),
                   child: Container(
                     width: 60,
@@ -383,11 +443,16 @@ class _AiCardState extends State<_AiCard> {
                       color: kNavy,
                       borderRadius: BorderRadius.circular(14),
                     ),
+<<<<<<< HEAD
                     child: const Icon(
                       Icons.near_me_outlined,
                       color: Colors.white,
                       size: 24,
                     ),
+=======
+                    child: const Icon(Icons.near_me_outlined,
+                        color: Colors.white, size: 24),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ),
                 ),
               ],
@@ -397,6 +462,7 @@ class _AiCardState extends State<_AiCard> {
 
           Row(
             children: [
+<<<<<<< HEAD
              _actionButton(Icons.mic_none, 'Voice', _openVoice),
               const SizedBox(width: 14),
               _actionButton(Icons.photo_camera_outlined, 'Image', () {
@@ -406,6 +472,15 @@ class _AiCardState extends State<_AiCard> {
                     builder: (context) => AiImageAnalysisScreen(),
                   ),
                 );
+=======
+              _actionButton(Icons.mic_none, 'Voice', () {
+                             Navigator.push(context, MaterialPageRoute(builder: (context)=>VoiceScreen()));
+
+              }),
+              const SizedBox(width: 14),
+              _actionButton(Icons.photo_camera_outlined, 'Image', () {
+               Navigator.push(context, MaterialPageRoute(builder: (context)=>AiImageAnalysisScreen()));
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               }),
             ],
           ),
@@ -491,6 +566,7 @@ class _PopularServices extends StatelessWidget {
       child: ListView.separated(
         scrollDirection: Axis.horizontal,
         itemCount: _services.length,
+<<<<<<< HEAD
         separatorBuilder: (_, _) => const SizedBox(width: 14),
         itemBuilder: (context, i) {
           return InkWell(
@@ -499,6 +575,14 @@ class _PopularServices extends StatelessWidget {
                 context,
                 MaterialPageRoute(builder: (context) => ServicesTab()),
               );
+=======
+        separatorBuilder: (_, __) => const SizedBox(width: 14),
+        itemBuilder: (context, i) {
+          return InkWell(
+            onTap: () {
+           
+           Navigator.push(context, MaterialPageRoute(builder: (context)=>ServicesTab()));
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             },
             borderRadius: BorderRadius.circular(20),
             child: Container(
@@ -506,7 +590,11 @@ class _PopularServices extends StatelessWidget {
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(20),
+<<<<<<< HEAD
                 border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+                border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ),
               child: Column(
                 mainAxisAlignment: MainAxisAlignment.center,
@@ -557,10 +645,17 @@ class _Chip extends StatelessWidget {
 }
 
 BoxDecoration _cardDecoration() => BoxDecoration(
+<<<<<<< HEAD
   color: Colors.white,
   borderRadius: BorderRadius.circular(20),
   border: Border.all(color: kBorder.withValues(alpha: 0.7)),
 );
+=======
+      color: Colors.white,
+      borderRadius: BorderRadius.circular(20),
+      border: Border.all(color: kBorder.withOpacity(0.7)),
+    );
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 // ---------- Recent service ----------
 class _RecentServiceCard extends StatelessWidget {
@@ -678,11 +773,16 @@ class _TechnicianCard extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(width: 8),
+<<<<<<< HEAD
                     const Icon(
                       Icons.verified_user_outlined,
                       color: kBlue,
                       size: 20,
                     ),
+=======
+                    const Icon(Icons.verified_user_outlined,
+                        color: kBlue, size: 20),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ],
                 ),
                 const SizedBox(height: 2),
@@ -699,4 +799,8 @@ class _TechnicianCard extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

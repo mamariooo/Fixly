@@ -3,7 +3,10 @@ import 'package:google_fonts/google_fonts.dart';
 
 import 'package:fixly/Login/Login.dart';
 import 'ai_chat_screen.dart';
+<<<<<<< HEAD
 import 'simple_chat_screen.dart';
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
 
 const Color _cyan = Color(0xFF14B8D6);
 const Color _iconBg = Color(0xFFDCE9FF);
@@ -53,17 +56,28 @@ class MessagesTab extends StatelessWidget {
                     ],
                   ),
                 ),
+<<<<<<< HEAD
                 if (trailing != null) ...[const SizedBox(width: 8), trailing],
+=======
+                if (trailing != null) ...[
+                  const SizedBox(width: 8),
+                  trailing,
+                ],
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
               ],
             ),
           ),
         ),
         if (showDivider)
+<<<<<<< HEAD
           Divider(
             height: 1,
             thickness: 1,
             color: kBorder.withValues(alpha: 0.5),
           ),
+=======
+          Divider(height: 1, thickness: 1, color: kBorder.withOpacity(0.5)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       ],
     );
   }
@@ -85,7 +99,14 @@ class MessagesTab extends StatelessWidget {
       width: 72,
       height: 72,
       alignment: Alignment.center,
+<<<<<<< HEAD
       decoration: const BoxDecoration(color: _iconBg, shape: BoxShape.circle),
+=======
+      decoration: const BoxDecoration(
+        color: _iconBg,
+        shape: BoxShape.circle,
+      ),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
       child: child,
     );
   }
@@ -111,7 +132,11 @@ class MessagesTab extends StatelessWidget {
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(22),
+<<<<<<< HEAD
               border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+=======
+              border: Border.all(color: kBorder.withOpacity(0.7)),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
             ),
             clipBehavior: Clip.antiAlias,
             child: Column(
@@ -120,19 +145,29 @@ class MessagesTab extends StatelessWidget {
                 _chatTile(
                   leading: _squareAvatar(
                     bg: kNavy,
+<<<<<<< HEAD
                     child: const Icon(
                       Icons.auto_awesome,
                       color: _cyan,
                       size: 24,
                     ),
+=======
+                    child: const Icon(Icons.auto_awesome,
+                        color: _cyan, size: 24),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ),
                   title: 'Fixly AI',
                   subtitle: 'Tell me what’s wrong and I’ll help.',
                   trailing: Container(
+<<<<<<< HEAD
                     padding: const EdgeInsets.symmetric(
                       horizontal: 16,
                       vertical: 8,
                     ),
+=======
+                    padding:
+                        const EdgeInsets.symmetric(horizontal: 16, vertical: 8),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                     decoration: BoxDecoration(
                       color: _iconBg,
                       borderRadius: BorderRadius.circular(20),
@@ -169,6 +204,7 @@ class MessagesTab extends StatelessWidget {
                   title: 'Hossam Ali',
                   subtitle: 'Job finished. Anything else?',
                   onTap: () {
+<<<<<<< HEAD
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -183,21 +219,30 @@ class MessagesTab extends StatelessWidget {
                         ),
                       ),
                     );
+=======
+                    // TODO: open chat with technician
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   },
                 ),
 
                 // Support
                 _chatTile(
                   leading: _circleAvatar(
+<<<<<<< HEAD
                     child: const Icon(
                       Icons.help_outline,
                       color: kBlue,
                       size: 28,
                     ),
+=======
+                    child: const Icon(Icons.help_outline,
+                        color: kBlue, size: 28),
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   ),
                   title: 'Fixly Support',
                   subtitle: 'Your refund was processed.',
                   onTap: () {
+<<<<<<< HEAD
                     Navigator.push(
                       context,
                       MaterialPageRoute(
@@ -211,6 +256,9 @@ class MessagesTab extends StatelessWidget {
                         ),
                       ),
                     );
+=======
+                    // TODO: open support chat
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
                   },
                   showDivider: false,
                 ),
@@ -221,4 +269,8 @@ class MessagesTab extends StatelessWidget {
       ),
     );
   }
+<<<<<<< HEAD
 }
+=======
+}
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df

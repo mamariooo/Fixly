@@ -33,6 +33,7 @@ class Validators {
     return _phoneRe.hasMatch(digits) ? null : 'Invalid email or phone';
   }
 
+<<<<<<< HEAD
   static String? fullName(String? value) {
     final v = (value ?? '').trim();
     if (v.isEmpty) return 'Full name is required';
@@ -58,6 +59,8 @@ class Validators {
     return null;
   }
 
+=======
+>>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   static String? password(String? value) {
     final v = value ?? '';
     if (v.isEmpty) return 'Password is required';
