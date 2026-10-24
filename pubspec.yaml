@@ -17,10 +17,9 @@ dependencies:
 
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
-<<<<<<< HEAD
+
   image_picker: ^1.1.2 
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
+
 
 dev_dependencies:
   flutter_test:

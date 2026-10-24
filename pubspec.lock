@@ -57,7 +57,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.19.1"
-<<<<<<< HEAD
   cross_file:
     dependency: transitive
     description:
@@ -66,8 +65,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.3.5+5"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   crypto:
     dependency: transitive
     description:
@@ -100,7 +97,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.2.0"
-<<<<<<< HEAD
   file_selector_linux:
     dependency: transitive
     description:
@@ -133,8 +129,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.9.3+6"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   flutter:
     dependency: "direct main"
     description: flutter
@@ -153,7 +147,6 @@ packages:
     description: flutter
     source: sdk
     version: "0.0.0"
-<<<<<<< HEAD
   flutter_plugin_android_lifecycle:
     dependency: transitive
     description:
@@ -162,21 +155,16 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.0.35"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   flutter_test:
     dependency: "direct dev"
     description: flutter
     source: sdk
     version: "0.0.0"
-<<<<<<< HEAD
   flutter_web_plugins:
     dependency: transitive
     description: flutter
     source: sdk
     version: "0.0.0"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   google_fonts:
     dependency: "direct main"
     description:
@@ -209,7 +197,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "4.1.2"
-<<<<<<< HEAD
   image_picker:
     dependency: "direct main"
     description:
@@ -274,8 +261,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "0.2.2"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   intl:
     dependency: transitive
     description:
@@ -372,7 +357,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "1.18.0"
-<<<<<<< HEAD
   mime:
     dependency: transitive
     description:
@@ -381,8 +365,6 @@ packages:
       url: "https://pub.dev"
     source: hosted
     version: "2.1.0"
-=======
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
   objective_c:
     dependency: transitive
     description:
@@ -560,10 +542,10 @@ packages:
     dependency: transitive
     description:
       name: vm_service
-      sha256: "5f37239c4851efcef929cea7824e76df7f2f0970aef85d66bbc430afa40e72f0"
+      sha256: "89b11d62e1040ee681af3b4f1c97a803ecbf010c6e8b9c5896ee5b08c3bf7b78"
       url: "https://pub.dev"
     source: hosted
-    version: "15.3.0"
+    version: "15.4.0"
   web:
     dependency: transitive
     description:
@@ -590,8 +572,4 @@ packages:
     version: "3.1.4"
 sdks:
   dart: ">=3.12.2 <4.0.0"
-<<<<<<< HEAD
   flutter: ">=3.44.0"
-=======
-  flutter: ">=3.38.4"
->>>>>>> d7a47081bc9218e43dd8e7d30092cfc45e7b93df
