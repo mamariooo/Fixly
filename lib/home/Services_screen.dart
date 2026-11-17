@@ -1,11 +1,27 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-// الألوان الأساسية (kNavy, kBlue, kBg, kGrey, kBorder) موجودة في login_screen.dart
-import 'package:fixly/Login/Login.dart';
+import '../core/theme/app_colors.dart';
 import 'ai_chat_screen.dart';
 
 const Color _iconBg = Color(0xFFDCE9FF);
+
+/// صفحة مستقلة لـ All Services (لما تتفتح بـ Navigator.push من See all)
+class ServicesScreen extends StatelessWidget {
+  const ServicesScreen({super.key});
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: kBg,
+      appBar: AppBar(
+        backgroundColor: kBg,
+        elevation: 0,
+        iconTheme: const IconThemeData(color: kNavy),
+      ),
+      body: const SafeArea(child: ServicesTab()),
+    );
+  }
+}
 
 /// تاب "All Services" (بيتحط جوه الـ Bottom Nav في HomeScreen)
 class ServicesTab extends StatelessWidget {
@@ -22,10 +38,16 @@ class ServicesTab extends StatelessWidget {
     (Icons.more_horiz, 'Other'),
   ];
 
-  void _openChat(BuildContext context) {
+  void _openChat(BuildContext context, {String? serviceName}) {
     Navigator.push(
       context,
-      MaterialPageRoute(builder: (_) => const AiChatScreen()),
+      MaterialPageRoute(
+        builder: (_) => AiChatScreen(
+          initialMessage: serviceName == null
+              ? null
+              : 'I need help with $serviceName.',
+        ),
+      ),
     );
   }
 
@@ -64,7 +86,7 @@ class ServicesTab extends StatelessWidget {
             itemBuilder: (context, i) {
               final item = _services[i];
               return InkWell(
-                onTap: () => _openChat(context), // أي سيرفس يفتح شات الـ AI
+                onTap: () => _openChat(context, serviceName: item.$2),
                 borderRadius: BorderRadius.circular(20),
                 child: Container(
                   decoration: BoxDecoration(

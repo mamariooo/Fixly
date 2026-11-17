@@ -1,9 +1,18 @@
+import 'package:firebase_core/firebase_core.dart';
 import 'package:flutter/material.dart';
+import 'package:flutter_dotenv/flutter_dotenv.dart';
 import 'package:flutter_localizations/flutter_localizations.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fixly/Splash/Splash.dart';
 
-final ValueNotifier<Locale> appLocale = ValueNotifier(const Locale('en'));
+import 'Splash/Splash.dart';
+import 'admin/admin_login.dart';
+import 'core/services/database_seeder.dart';
+import 'firebase_options.dart';
+import 'home/Dashboard_Technician/technician_home_screen.dart';
+import 'home/home.dart';
+import 'home/nearby_technicians_screen.dart';
+
+final ValueNotifier<Locale> appLocale = ValueNotifier(const Locale('ar'));
 
 void changeLanguage(String languageCode) {
   if (languageCode != 'ar' && languageCode != 'en') {
@@ -15,7 +24,18 @@ void changeLanguage(String languageCode) {
   }
 }
 
-void main() {
+void main() async {
+  WidgetsFlutterBinding.ensureInitialized();
+  try {
+    await Firebase.initializeApp(
+      options: DefaultFirebaseOptions.currentPlatform,
+    );
+    // زرع الفنيين الافتراضيين في الخلفية
+    DatabaseSeeder.instance.seedIfNeeded();
+  } catch (e) {
+    debugPrint('Firebase init notice: $e');
+  }
+  await dotenv.load(fileName: '.env');
   runApp(const MyApp());
 }
 
@@ -33,8 +53,7 @@ class MyApp extends StatelessWidget {
           debugShowCheckedModeBanner: false,
           title: 'Fixly',
           locale: locale,
-
-          supportedLocales: const [Locale('en'), Locale('ar')],
+          supportedLocales: const [Locale('ar'), Locale('en')],
 
           // إعدادات الترجمة الداخلية في Flutter
           localizationsDelegates: const [
@@ -58,7 +77,17 @@ class MyApp extends StatelessWidget {
             );
           },
 
+          // نقطة البداية
           home: const FixlyApp(),
+
+          // مسارات التطبيق (End Points) المخصصة
+          routes: {
+            '/admin': (context) =>
+                const AdminLoginScreen(), // Endpoint خاص بالأدمن
+            '/home': (context) => const HomeScreen(),
+            '/technician': (context) => const TechnicianHomeScreen(),
+            '/nearby': (context) => const NearbyTechniciansScreen(),
+          },
         );
       },
     );

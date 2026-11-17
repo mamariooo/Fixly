@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:fixly/Login/Login.dart';
+import '../core/theme/app_colors.dart';
 
 const Color _cyan = Color(0xFF14B8D6);
 const Color _chipBg = Color(0xFFDCE9FF);

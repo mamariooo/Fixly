@@ -1,12 +1,15 @@
 import 'dart:ui' show PathMetric;
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fixly/core/theme/app_colors.dart';
-import 'package:fixly/core/utils/validators.dart';
-import 'Login.dart';
+import '../core/database/firestore_paths.dart';
+import '../core/database/user_repository.dart';
+import '../core/services/auth_service.dart';
+import '../core/theme/app_colors.dart';
+import '../core/utils/validators.dart';
 import 'Technician_Login.dart';
-import 'package:fixly/core/services/technician_application_store.dart';
 
 class TechnicianApplyScreen extends StatefulWidget {
   const TechnicianApplyScreen({super.key});
@@ -18,9 +21,12 @@ class TechnicianApplyScreen extends StatefulWidget {
 class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   final _nameCtrl = TextEditingController();
   final _phoneCtrl = TextEditingController();
+  final _emailCtrl = TextEditingController();
   final _yearsCtrl = TextEditingController();
   final _areaCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+
+  final AuthService _authService = AuthService();
 
   final List<String> _skills = const [
     'AC Specialist',
@@ -34,18 +40,22 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
 
   String? _idPhotoName;
   final ImagePicker _picker = ImagePicker();
+
   String? _nameError;
   String? _phoneError;
+  String? _emailError;
   String? _skillError;
   String? _yearsError;
   String? _areaError;
   String? _idError;
   String? _passError;
+  bool _isSubmitting = false;
 
   @override
   void dispose() {
     _nameCtrl.dispose();
     _phoneCtrl.dispose();
+    _emailCtrl.dispose();
     _yearsCtrl.dispose();
     _areaCtrl.dispose();
     _passCtrl.dispose();
@@ -203,6 +213,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
   Future<void> _submit() async {
     final nameError = Validators.fullName(_nameCtrl.text);
     final phoneError = Validators.phone(_phoneCtrl.text);
+    final emailError = Validators.email(_emailCtrl.text);
     final skillError = _selectedSkill == null ? 'Select your main skill' : null;
     final yearsError = Validators.years(_yearsCtrl.text);
     final areaError = Validators.required(_areaCtrl.text, 'Required');
@@ -210,10 +221,15 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
         ? 'National ID photo is required'
         : null;
     final passError = Validators.password(_passCtrl.text);
-
+    if (await UserRepository().isPhoneTaken(_phoneCtrl.text.trim())) {
+      if (!mounted) return;
+      setState(() => _phoneError = 'This phone number is already registered');
+      return;
+    }
     setState(() {
       _nameError = nameError;
       _phoneError = phoneError;
+      _emailError = emailError;
       _skillError = skillError;
       _yearsError = yearsError;
       _areaError = areaError;
@@ -224,6 +240,7 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
     if ([
       nameError,
       phoneError,
+      emailError,
       skillError,
       yearsError,
       areaError,
@@ -233,39 +250,85 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
       return;
     }
 
-   TechnicianApplicationStore.instance.submit(
-      name: _nameCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      skill: _selectedSkill!,
-      years: _yearsCtrl.text.trim(),
-      area: _areaCtrl.text.trim(),
-      idPhoto: _idPhotoName!,
-    );
+    if (_isSubmitting) return;
+    setState(() => _isSubmitting = true);
 
-    await showDialog<void>(
-      context: context,
-      barrierDismissible: false,
-      builder: (ctx) => AlertDialog(
-        title: const Text('Application received'),
-        content: const Text(
-          'Thanks! We review every application. '
-          'You can sign in once it is approved.',
-        ),
-        actions: [
-          TextButton(
-            onPressed: () => Navigator.pop(ctx),
-            child: const Text('OK'),
+    final name = _nameCtrl.text.trim();
+    final phone = _phoneCtrl.text.trim();
+    final email = _emailCtrl.text.trim();
+    final skill = _selectedSkill!;
+    final years = _yearsCtrl.text.trim();
+    final area = _areaCtrl.text.trim();
+    final idPhoto = _idPhotoName!;
+
+    try {
+      final authResult = await _authService.signUpTechnician(
+        fullName: name,
+        phone: phone,
+        email: email,
+        password: _passCtrl.text,
+        area: area,
+        specialty: skill,
+      );
+
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.technicianApplications)
+          .doc(authResult.firebaseUser.uid)
+          .set({
+            'uid': authResult.firebaseUser.uid,
+            'fullName': name,
+            'phone': phone,
+            'email': email,
+            'skill': skill,
+            'years': years,
+            'area': area,
+            'idPhotoName': idPhoto,
+            'role': 'technician',
+            'status': 'pending_approval',
+            'createdAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+
+      await _authService.signOut();
+
+      if (!mounted) return;
+
+      await showDialog<void>(
+        context: context,
+        barrierDismissible: false,
+        builder: (ctx) => AlertDialog(
+          title: const Text('Application received'),
+          content: const Text(
+            'Thanks! We review every application. '
+            'You can sign in once it is approved.',
           ),
-        ],
-      ),
-    );
-    if (!mounted) return;
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('OK'),
+            ),
+          ],
+        ),
+      );
+      if (!mounted) return;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const TechnicianLoginScreen()),
-      (route) => route.isFirst,
-    );
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const TechnicianLoginScreen()),
+        (route) => route.isFirst,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'تعذر إرسال الطلب (${e.code})')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر إرسال الطلب: $e')));
+    } finally {
+      if (mounted) setState(() => _isSubmitting = false);
+    }
   }
 
   Widget _uploadBox() {
@@ -311,205 +374,199 @@ class _TechnicianApplyScreenState extends State<TechnicianApplyScreen> {
     return Scaffold(
       backgroundColor: kBg,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-
-                    // Header: back + title
-                    Row(
-                      crossAxisAlignment: CrossAxisAlignment.center,
-                      children: [
-                        InkWell(
-                          onTap: () => Navigator.maybePop(context),
-                          borderRadius: BorderRadius.circular(16),
-                          child: Container(
-                            width: 52,
-                            height: 52,
-                            decoration: BoxDecoration(
-                              color: Colors.white,
-                              borderRadius: BorderRadius.circular(16),
-                              border: Border.all(
-                                color: kBorder.withValues(alpha: 0.6),
-                              ),
-                            ),
-                            child: const Icon(
-                              Icons.chevron_left,
-                              color: kNavy,
-                              size: 28,
-                            ),
-                          ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.center,
+                children: [
+                  InkWell(
+                    onTap: () => Navigator.maybePop(context),
+                    borderRadius: BorderRadius.circular(16),
+                    child: Container(
+                      width: 52,
+                      height: 52,
+                      decoration: BoxDecoration(
+                        color: Colors.white,
+                        borderRadius: BorderRadius.circular(16),
+                        border: Border.all(
+                          color: kBorder.withValues(alpha: 0.6),
                         ),
-                        const SizedBox(width: 16),
-                        Column(
-                          crossAxisAlignment: CrossAxisAlignment.start,
-                          children: [
-                            Text(
-                              'Join as technician',
-                              style: GoogleFonts.manrope(
-                                fontSize: 24,
-                                fontWeight: FontWeight.w800,
-                                color: kNavy,
-                              ),
-                            ),
-                            Text(
-                              'We review every application.',
-                              style: GoogleFonts.manrope(
-                                fontSize: 14,
-                                color: kGrey,
-                              ),
-                            ),
-                          ],
-                        ),
-                      ],
-                    ),
-                    const SizedBox(height: 24),
-
-                    _label('Full name'),
-                    TextField(
-                      controller: _nameCtrl,
-                      textCapitalization: TextCapitalization.words,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_nameError != null) {
-                          setState(() => _nameError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'Full name',
-                        errorText: _nameError,
+                      ),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: kNavy,
+                        size: 28,
                       ),
                     ),
-                    const SizedBox(height: 20),
-
-                    _label('Phone'),
-                    _phoneField(),
-                    const SizedBox(height: 20),
-
-                    _label('Main skill'),
-                    _skillDropdown(),
-                    const SizedBox(height: 20),
-
-                    // Years + Area
-                    Row(
+                  ),
+                  const SizedBox(width: 16),
+                  Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Join as technician',
+                        style: GoogleFonts.manrope(
+                          fontSize: 24,
+                          fontWeight: FontWeight.w800,
+                          color: kNavy,
+                        ),
+                      ),
+                      Text(
+                        'We review every application.',
+                        style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+              const SizedBox(height: 24),
+              _label('Full name'),
+              TextField(
+                controller: _nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_nameError != null) setState(() => _nameError = null);
+                },
+                decoration: _decoration(
+                  hint: 'Full name',
+                  errorText: _nameError,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _label('Phone'),
+              _phoneField(),
+              const SizedBox(height: 20),
+              _label('Email'),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_emailError != null) setState(() => _emailError = null);
+                },
+                decoration: _decoration(hint: 'Email', errorText: _emailError),
+              ),
+              const SizedBox(height: 20),
+              _label('Main skill'),
+              _skillDropdown(),
+              const SizedBox(height: 20),
+              Row(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Expanded(
+                    child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _label('Years of experience'),
-                              TextField(
-                                controller: _yearsCtrl,
-                                keyboardType: TextInputType.number,
-                                style: _inputStyle,
-                                onChanged: (_) {
-                                  if (_yearsError != null) {
-                                    setState(() => _yearsError = null);
-                                  }
-                                },
-                                decoration: _decoration(
-                                  hint: '0',
-                                  errorText: _yearsError,
-                                ),
-                              ),
-                            ],
-                          ),
-                        ),
-                        const SizedBox(width: 16),
-                        Expanded(
-                          child: Column(
-                            crossAxisAlignment: CrossAxisAlignment.start,
-                            children: [
-                              _label('Area'),
-                              TextField(
-                                controller: _areaCtrl,
-                                style: _inputStyle,
-                                onChanged: (_) {
-                                  if (_areaError != null) {
-                                    setState(() => _areaError = null);
-                                  }
-                                },
-                                decoration: _decoration(
-                                  hint: 'Area',
-                                  errorText: _areaError,
-                                ),
-                              ),
-                            ],
+                        _label('Years of experience'),
+                        TextField(
+                          controller: _yearsCtrl,
+                          keyboardType: TextInputType.number,
+                          style: _inputStyle,
+                          onChanged: (_) {
+                            if (_yearsError != null) {
+                              setState(() => _yearsError = null);
+                            }
+                          },
+                          decoration: _decoration(
+                            hint: '0',
+                            errorText: _yearsError,
                           ),
                         ),
                       ],
                     ),
-                    const SizedBox(height: 20),
-
-                    _label('National ID photo'),
-                    _uploadBox(),
-                    if (_idError != null)
-                      Padding(
-                        padding: const EdgeInsets.only(top: 8, left: 4),
-                        child: Text(
-                          _idError!,
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
-                            fontWeight: FontWeight.w600,
-                            color: C.error,
+                  ),
+                  const SizedBox(width: 16),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        _label('Area'),
+                        TextField(
+                          controller: _areaCtrl,
+                          style: _inputStyle,
+                          onChanged: (_) {
+                            if (_areaError != null) {
+                              setState(() => _areaError = null);
+                            }
+                          },
+                          decoration: _decoration(
+                            hint: 'Area',
+                            errorText: _areaError,
                           ),
                         ),
-                      ),
-                    const SizedBox(height: 20),
-
-                    _label('Password'),
-                    TextField(
-                      controller: _passCtrl,
-                      obscureText: true,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_passError != null) {
-                          setState(() => _passError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'At least 8 characters',
-                        errorText: _passError,
-                      ),
+                      ],
                     ),
-
-                    const Spacer(),
-                    const SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _submit,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kNavy,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
+                  ),
+                ],
+              ),
+              const SizedBox(height: 20),
+              _label('National ID photo'),
+              _uploadBox(),
+              if (_idError != null)
+                Padding(
+                  padding: const EdgeInsets.only(top: 8, left: 4),
+                  child: Text(
+                    _idError!,
+                    style: GoogleFonts.manrope(
+                      fontSize: 13,
+                      fontWeight: FontWeight.w600,
+                      color: C.error,
+                    ),
+                  ),
+                ),
+              const SizedBox(height: 20),
+              _label('Password'),
+              TextField(
+                controller: _passCtrl,
+                obscureText: true,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_passError != null) setState(() => _passError = null);
+                },
+                decoration: _decoration(
+                  hint: 'At least 8 characters',
+                  errorText: _passError,
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: _isSubmitting ? null : _submit,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNavy,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: _isSubmitting
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
                           ),
-                        ),
-                        child: Text(
+                        )
+                      : Text(
                           'Submit application',
                           style: GoogleFonts.manrope(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
                 ),
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ),
@@ -552,6 +609,4 @@ class _DashedBorderPainter extends CustomPainter {
   @override
   bool shouldRepaint(covariant _DashedBorderPainter old) =>
       old.color != color || old.radius != radius;
-
-    
 }

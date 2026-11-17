@@ -1,14 +1,24 @@
-import 'package:fixly/home/AI_ImageAnalysis.dart';
-import 'package:fixly/home/BookingsTab.dart';
-import 'package:fixly/home/MessagesTab.dart';
-import 'package:fixly/home/ProfileTab.dart';
-import 'package:fixly/home/Services_screen.dart';
-import 'package:fixly/home/voice_screen.dart';
-import 'package:fixly/home/ai_chat_screen.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:fixly/Login/Login.dart';
+import '../core/database/user_repository.dart';
+import '../core/l10n/app_strings.dart';
+import '../core/models/technician_model.dart';
+import '../core/services/database_seeder.dart';
+import '../core/services/notification_store.dart';
+import '../core/theme/app_colors.dart';
+import '../main.dart';
+import 'AI_ImageAnalysis.dart';
+import 'BookingsTab.dart';
+import 'MessagesTab.dart';
+import 'ProfileTab.dart';
+import 'Services_screen.dart';
+import 'ai_chat_screen.dart';
+import 'nearby_technicians_screen.dart';
+import 'notification_screen.dart';
+import 'profile/service_history_screen.dart';
+import 'voice_screen.dart';
 
 const Color kCyanLabel = Color(0xFF14B8D6);
 const Color kNavyLight = Color(0xFF1C3358);
@@ -58,58 +68,64 @@ class _BottomNav extends StatelessWidget {
 
   const _BottomNav({required this.currentIndex, required this.onTap});
 
-  static const _items = [
-    (Icons.home_outlined, 'Home'),
-    (Icons.grid_view_rounded, 'Services'),
-    (Icons.calendar_today_outlined, 'Bookings'),
-    (Icons.chat_bubble_outline, 'Messages'),
-    (Icons.person_outline, 'Profile'),
-  ];
-
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: Colors.white,
-        border: Border(top: BorderSide(color: kBorder, width: 0.8)),
-      ),
-      child: SafeArea(
-        top: false,
-        child: Padding(
-          padding: const EdgeInsets.symmetric(vertical: 10),
-          child: Row(
-            children: List.generate(_items.length, (i) {
-              final selected = i == currentIndex;
-              final color = selected ? kNavy : kGrey;
-              return Expanded(
-                child: InkWell(
-                  onTap: () => onTap(i),
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(vertical: 6),
-                    child: Column(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(_items[i].$1, color: color, size: 26),
-                        const SizedBox(height: 6),
-                        Text(
-                          _items[i].$2,
-                          style: GoogleFonts.manrope(
-                            fontSize: 13,
-                            fontWeight: selected
-                                ? FontWeight.w800
-                                : FontWeight.w600,
-                            color: color,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              );
-            }),
+    return ValueListenableBuilder<Locale>(
+      valueListenable: appLocale,
+      builder: (context, locale, _) {
+        final items = [
+          (Icons.home_outlined, S.home),
+          (Icons.grid_view_rounded, S.services),
+          (Icons.calendar_today_outlined, S.bookings),
+          (Icons.chat_bubble_outline, S.messages),
+          (Icons.person_outline, S.profile),
+        ];
+        return Container(
+          decoration: const BoxDecoration(
+            color: Colors.white,
+            border: Border(top: BorderSide(color: kBorder, width: 0.8)),
           ),
-        ),
-      ),
+          child: SafeArea(
+            top: false,
+            child: Padding(
+              padding: const EdgeInsets.symmetric(vertical: 10),
+              child: Row(
+                children: List.generate(items.length, (i) {
+                  final selected = i == currentIndex;
+                  final color = selected ? kNavy : kGrey;
+                  return Expanded(
+                    child: InkWell(
+                      onTap: () => onTap(i),
+                      child: Padding(
+                        padding: const EdgeInsets.symmetric(vertical: 6),
+                        child: Column(
+                          mainAxisSize: MainAxisSize.min,
+                          children: [
+                            Icon(items[i].$1, color: color, size: 26),
+                            const SizedBox(height: 6),
+                            Text(
+                              items[i].$2,
+                              maxLines: 1,
+                              overflow: TextOverflow.ellipsis,
+                              style: GoogleFonts.manrope(
+                                fontSize: 12,
+                                fontWeight: selected
+                                    ? FontWeight.w800
+                                    : FontWeight.w600,
+                                color: color,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }),
+              ),
+            ),
+          ),
+        );
+      },
     );
   }
 }
@@ -117,8 +133,52 @@ class _BottomNav extends StatelessWidget {
 // ============================================================
 // Home Tab
 // ============================================================
-class HomeTab extends StatelessWidget {
+class HomeTab extends StatefulWidget {
   const HomeTab({super.key});
+
+  @override
+  State<HomeTab> createState() => _HomeTabState();
+}
+
+class _HomeTabState extends State<HomeTab> {
+  final UserRepository _userRepo = UserRepository();
+  String _userName = 'Client';
+  String _location = 'Cairo';
+  List<TechnicianModel> _recommendedTechs = [];
+
+  @override
+  void initState() {
+    super.initState();
+    _loadUser();
+    _loadTechnicians();
+  }
+
+  Future<void> _loadTechnicians() async {
+    final list = await DatabaseSeeder.instance.getTechnicians();
+    if (!mounted) return;
+    setState(() => _recommendedTechs = list);
+  }
+
+  Future<void> _loadUser() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+      setState(() => _userName = user.displayName!.trim());
+    }
+
+    final appUser = await _userRepo.getUserById(user.uid);
+    if (!mounted || appUser == null) return;
+
+    setState(() {
+      if (appUser.fullName.trim().isNotEmpty) {
+        _userName = appUser.fullName.trim();
+      }
+      if (appUser.area != null && appUser.area!.trim().isNotEmpty) {
+        _location = appUser.area!.trim();
+      }
+    });
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -127,14 +187,19 @@ class HomeTab extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const _Header(userName: 'Mario', location: 'Minya'),
+          _Header(userName: _userName, location: _location),
           const SizedBox(height: 24),
           const _AiCard(),
           const SizedBox(height: 28),
           _SectionTitle(
             title: 'Popular Services',
             action: 'See all',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ServicesScreen()),
+              );
+            },
           ),
           const SizedBox(height: 14),
           const _PopularServices(),
@@ -142,7 +207,12 @@ class HomeTab extends StatelessWidget {
           _SectionTitle(
             title: 'Recent Services',
             action: 'History',
-            onTap: () {},
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(builder: (_) => const ServiceHistoryScreen()),
+              );
+            },
           ),
           const SizedBox(height: 14),
           const _RecentServiceCard(
@@ -152,14 +222,63 @@ class HomeTab extends StatelessWidget {
             status: 'Completed',
           ),
           const SizedBox(height: 28),
-          const _SectionTitle(title: 'Recommended Technicians'),
-          const SizedBox(height: 14),
-          const _TechnicianCard(
-            initials: 'AH',
-            name: 'Ahmed Hassan',
-            subtitle: 'AC Specialist · 4.8 · 1.2 km',
-            match: '94%',
+          _SectionTitle(
+            title: 'Recommended Technicians',
+            action: 'See all',
+            onTap: () {
+              Navigator.push(
+                context,
+                MaterialPageRoute(
+                  builder: (_) => const NearbyTechniciansScreen(),
+                ),
+              );
+            },
           ),
+          const SizedBox(height: 14),
+          if (_recommendedTechs.isEmpty)
+            _TechnicianCard(
+              initials: 'AH',
+              name: 'Ahmed Hassan',
+              subtitle: 'AC Specialist · 4.9 · 1.2 km',
+              match: '98%',
+              onTap: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(
+                    builder: (_) => const NearbyTechniciansScreen(),
+                  ),
+                );
+              },
+            )
+          else
+            ..._recommendedTechs
+                .take(3)
+                .map(
+                  (tech) => Padding(
+                    padding: const EdgeInsets.only(bottom: 12),
+                    child: _TechnicianCard(
+                      initials: tech.name
+                          .split(' ')
+                          .map((p) => p.isNotEmpty ? p[0] : '')
+                          .take(2)
+                          .join(),
+                      name: tech.name,
+                      subtitle:
+                          '${tech.specialty} · ${tech.rating} ★ · ${tech.distanceKm} km',
+                      match: '${tech.matchPercentage}%',
+                      onTap: () {
+                        Navigator.push(
+                          context,
+                          MaterialPageRoute(
+                            builder: (_) => NearbyTechniciansScreen(
+                              initialCategory: tech.specialty,
+                            ),
+                          ),
+                        );
+                      },
+                    ),
+                  ),
+                ),
         ],
       ),
     );
@@ -212,36 +331,49 @@ class _Header extends StatelessWidget {
           ),
         ),
         const SizedBox(width: 12),
-        Stack(
-          clipBehavior: Clip.none,
-          children: [
-            Container(
-              width: 52,
-              height: 52,
-              decoration: BoxDecoration(
-                color: Colors.white,
-                borderRadius: BorderRadius.circular(16),
-                border: Border.all(color: kBorder.withValues(alpha: 0.6)),
-              ),
-              child: const Icon(
-                Icons.notifications_none,
-                color: kNavy,
-                size: 26,
-              ),
-            ),
-            Positioned(
-              top: 13,
-              right: 14,
-              child: Container(
-                width: 9,
-                height: 9,
-                decoration: const BoxDecoration(
-                  color: Color(0xFFE5322D),
-                  shape: BoxShape.circle,
+        InkWell(
+          onTap: () {
+            Navigator.push(
+              context,
+              MaterialPageRoute(
+                builder: (_) => const NotificationsScreen(
+                  audience: NotificationAudience.customer,
                 ),
               ),
-            ),
-          ],
+            );
+          },
+          borderRadius: BorderRadius.circular(16),
+          child: Stack(
+            clipBehavior: Clip.none,
+            children: [
+              Container(
+                width: 52,
+                height: 52,
+                decoration: BoxDecoration(
+                  color: Colors.white,
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+                ),
+                child: const Icon(
+                  Icons.notifications_none,
+                  color: kNavy,
+                  size: 26,
+                ),
+              ),
+              Positioned(
+                top: 13,
+                right: 14,
+                child: Container(
+                  width: 9,
+                  height: 9,
+                  decoration: const BoxDecoration(
+                    color: Color(0xFFE5322D),
+                    shape: BoxShape.circle,
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ],
     );
@@ -397,13 +529,13 @@ class _AiCardState extends State<_AiCard> {
 
           Row(
             children: [
-             _actionButton(Icons.mic_none, 'Voice', _openVoice),
+              _actionButton(Icons.mic_none, 'Voice', _openVoice),
               const SizedBox(width: 14),
               _actionButton(Icons.photo_camera_outlined, 'Image', () {
                 Navigator.push(
                   context,
                   MaterialPageRoute(
-                    builder: (context) => AiImageAnalysisScreen(),
+                    builder: (context) => const AiImageAnalysisScreen(),
                   ),
                 );
               }),
@@ -426,17 +558,21 @@ class _SectionTitle extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Row(
-      mainAxisAlignment: MainAxisAlignment.spaceBetween,
       children: [
-        Text(
-          title,
-          style: GoogleFonts.manrope(
-            fontSize: 22,
-            fontWeight: FontWeight.w800,
-            color: kNavy,
+        Expanded(
+          child: Text(
+            title,
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+            style: GoogleFonts.manrope(
+              fontSize: 22,
+              fontWeight: FontWeight.w800,
+              color: kNavy,
+            ),
           ),
         ),
-        if (action != null)
+        if (action != null) ...[
+          const SizedBox(width: 12),
           GestureDetector(
             onTap: onTap,
             child: Text(
@@ -448,6 +584,7 @@ class _SectionTitle extends StatelessWidget {
               ),
             ),
           ),
+        ],
       ],
     );
   }
@@ -497,7 +634,7 @@ class _PopularServices extends StatelessWidget {
             onTap: () {
               Navigator.push(
                 context,
-                MaterialPageRoute(builder: (context) => ServicesTab()),
+                MaterialPageRoute(builder: (context) => const ServicesScreen()),
               );
             },
             borderRadius: BorderRadius.circular(20),
@@ -599,6 +736,8 @@ class _RecentServiceCard extends StatelessWidget {
               children: [
                 Text(
                   title,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(
                     fontSize: 19,
                     fontWeight: FontWeight.w800,
@@ -608,6 +747,8 @@ class _RecentServiceCard extends StatelessWidget {
                 const SizedBox(height: 2),
                 Text(
                   subtitle,
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
                   style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
                 ),
               ],
@@ -627,75 +768,83 @@ class _TechnicianCard extends StatelessWidget {
   final String name;
   final String subtitle;
   final String match;
+  final VoidCallback? onTap;
 
   const _TechnicianCard({
     required this.initials,
     required this.name,
     required this.subtitle,
     required this.match,
+    this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(16),
-      decoration: _cardDecoration(),
-      child: Row(
-        children: [
-          Container(
-            width: 72,
-            height: 72,
-            alignment: Alignment.center,
-            decoration: const BoxDecoration(
-              color: kIconBg,
-              shape: BoxShape.circle,
-            ),
-            child: Text(
-              initials,
-              style: GoogleFonts.manrope(
-                fontSize: 20,
-                fontWeight: FontWeight.w700,
-                color: kNavy,
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        padding: const EdgeInsets.all(16),
+        decoration: _cardDecoration(),
+        child: Row(
+          children: [
+            Container(
+              width: 72,
+              height: 72,
+              alignment: Alignment.center,
+              decoration: const BoxDecoration(
+                color: kIconBg,
+                shape: BoxShape.circle,
+              ),
+              child: Text(
+                initials,
+                style: GoogleFonts.manrope(
+                  fontSize: 20,
+                  fontWeight: FontWeight.w700,
+                  color: kNavy,
+                ),
               ),
             ),
-          ),
-          const SizedBox(width: 16),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Flexible(
-                      child: Text(
-                        name,
-                        overflow: TextOverflow.ellipsis,
-                        style: GoogleFonts.manrope(
-                          fontSize: 20,
-                          fontWeight: FontWeight.w800,
-                          color: kNavy,
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Flexible(
+                        child: Text(
+                          name,
+                          overflow: TextOverflow.ellipsis,
+                          style: GoogleFonts.manrope(
+                            fontSize: 20,
+                            fontWeight: FontWeight.w800,
+                            color: kNavy,
+                          ),
                         ),
                       ),
-                    ),
-                    const SizedBox(width: 8),
-                    const Icon(
-                      Icons.verified_user_outlined,
-                      color: kBlue,
-                      size: 20,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  subtitle,
-                  style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
-                ),
-              ],
+                      const SizedBox(width: 8),
+                      const Icon(
+                        Icons.verified_user_outlined,
+                        color: kBlue,
+                        size: 20,
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle,
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
+                  ),
+                ],
+              ),
             ),
-          ),
-          const SizedBox(width: 8),
-          _Chip(match),
-        ],
+            const SizedBox(width: 8),
+            _Chip(match),
+          ],
+        ),
       ),
     );
   }

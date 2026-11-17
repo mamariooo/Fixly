@@ -1,71 +1,133 @@
+import 'dart:io';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fixly/Login/Login.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fixly/home/voice_screen.dart';
-import 'package:fixly/core/services/booking_store.dart';
-import 'package:fixly/core/services/profile_store.dart';
+
+import '../core/models/technician_model.dart';
+import '../core/services/booking_store.dart';
+import '../core/services/database_seeder.dart';
+import '../core/services/fixly_ai_service.dart';
+import '../core/services/profile_store.dart';
+import '../core/theme/app_colors.dart';
+import '../main.dart';
+import 'BookingsTab.dart';
 
 const Color _cyan = Color(0xFF14B8D6);
-const Color _greenBg = Color(0xFFDDF3E6);
-const Color _greenText = Color(0xFF14733A);
-const Color _amberBg = Color(0xFFFDEBC8);
-const Color _amberText = Color(0xFF8A5300);
-const Color _lightBlueBg = Color(0xFFE3EEFF);
-const Color _blueText = Color(0xFF1B4FA8);
-const Color _redBg = Color(0xFFFDE2E1);
-const Color _redText = Color(0xFFB42318);
 const Color _roundBtnBg = Color(0xFFEEF2F8);
 const Color _trackBg = Color(0xFFE6EAF2);
 
-// ============================================================
-// Model
-// ============================================================
-enum _Role { user, ai, summary }
+enum _Role { user, ai, summary, techRecommendation, success }
 
 class _ChatMessage {
   final _Role role;
   final String? text;
-  final List<String> options; // أزرار الرد السريع (Yes / No / Not sure)
+  final List<String> options;
 
-  // بيانات كارت "What I understood"
+  // بيانات كارت التشخيص (AI Diagnosis)
   final String? service;
   final String? urgency;
   final String? issue;
+  final bool needsExpert;
   final double? confidence;
+  final String? safetyAdvice;
+  final String? technicianBrief;
 
-  const _ChatMessage.user(this.text)
+  // صور مرفقة
+  final String? photoPath;
+  final Uint8List? photoBytes;
+
+  // فنيون مرشحون
+  final List<TechnicianModel>? recommendedTechnicians;
+  final TechnicianModel? selectedTech;
+
+  const _ChatMessage.user(this.text, {this.photoPath, this.photoBytes})
     : role = _Role.user,
       options = const [],
       service = null,
       urgency = null,
       issue = null,
-      confidence = null;
+      needsExpert = false,
+      confidence = null,
+      safetyAdvice = null,
+      technicianBrief = null,
+      recommendedTechnicians = null,
+      selectedTech = null;
 
   const _ChatMessage.ai(this.text, {this.options = const []})
     : role = _Role.ai,
       service = null,
       urgency = null,
       issue = null,
-      confidence = null;
+      needsExpert = false,
+      confidence = null,
+      safetyAdvice = null,
+      technicianBrief = null,
+      photoPath = null,
+      photoBytes = null,
+      recommendedTechnicians = null,
+      selectedTech = null;
 
   const _ChatMessage.summary({
     required this.service,
     required this.urgency,
     required this.issue,
+    required this.needsExpert,
     required this.confidence,
+    required this.safetyAdvice,
+    required this.technicianBrief,
   }) : role = _Role.summary,
        text = null,
-       options = const [];
+       options = const [],
+       photoPath = null,
+       photoBytes = null,
+       recommendedTechnicians = null,
+       selectedTech = null;
+
+  const _ChatMessage.recommendation(
+    this.recommendedTechnicians, {
+    this.service,
+    this.issue,
+    this.urgency,
+    this.needsExpert = false,
+    this.technicianBrief,
+  }) : role = _Role.techRecommendation,
+       text = null,
+       options = const [],
+       confidence = null,
+       safetyAdvice = null,
+       photoPath = null,
+       photoBytes = null,
+       selectedTech = null;
+
+  const _ChatMessage.success(this.text, {this.selectedTech})
+    : role = _Role.success,
+      options = const [],
+      service = null,
+      urgency = null,
+      issue = null,
+      needsExpert = false,
+      confidence = null,
+      safetyAdvice = null,
+      technicianBrief = null,
+      photoPath = null,
+      photoBytes = null,
+      recommendedTechnicians = null;
 }
 
-// ============================================================
-// Screen
-// ============================================================
 class AiChatScreen extends StatefulWidget {
-  const AiChatScreen({super.key, this.initialMessage});
+  const AiChatScreen({
+    super.key,
+    this.initialMessage,
+    this.preSelectedTechnician,
+    this.initialPhotoPath,
+    this.initialPhotoBytes,
+  });
 
   final String? initialMessage;
+  final TechnicianModel? preSelectedTechnician;
+  final String? initialPhotoPath;
+  final Uint8List? initialPhotoBytes;
 
   @override
   State<AiChatScreen> createState() => _AiChatScreenState();
@@ -75,33 +137,43 @@ class _AiChatScreenState extends State<AiChatScreen> {
   final _inputCtrl = TextEditingController();
   final _scrollCtrl = ScrollController();
   final ImagePicker _picker = ImagePicker();
-  bool _isTyping = false;
-  final Set<int> _requested = {};
 
-  final List<_ChatMessage> _messages = [
-    const _ChatMessage.user('The AC is running but it’s not cooling.'),
-    const _ChatMessage.ai(
-      'It sounds like your AC may have a cooling or airflow issue.',
-    ),
-    const _ChatMessage.summary(
-      service: 'Air Conditioning',
-      urgency: 'Medium',
-      issue: 'Cooling / Airflow Problem',
-      confidence: 0.87,
-    ),
-    const _ChatMessage.ai(
-      'Is the AC making any unusual sounds?',
-      options: ['Yes', 'No', 'Not sure'],
-    ),
-  ];
+  bool _isTyping = false;
+  bool _isCreatingBooking = false;
+  final Set<String> _requestedTechIds = {};
+  final List<String> _attachedPhotos = [];
+
+  final List<_ChatMessage> _messages = [];
 
   @override
   void initState() {
     super.initState();
-    final first = widget.initialMessage;
-    if (first != null && first.trim().isNotEmpty) {
-      WidgetsBinding.instance.addPostFrameCallback((_) => _send(first));
-    }
+
+    // رسالة الترحيب الافتراضية
+    _messages.add(
+      const _ChatMessage.ai(
+        'مرحباً بك! أنا مساعد Fixly الذكي للصيانة. اشرح لي المشكلة التي تواجهها أو أرفق صورة وسأقوم بتشخيصها وترشيح الفني الأنسب لك.',
+        options: [
+          'التكييف مش بيسقع وبيطلع صوت',
+          'عندي تسريب مياه في المطبخ',
+          'فيشة أو مفتاح كهرباء بيشرز',
+        ],
+      ),
+    );
+
+    // إذا تم تمرير رسالة أو صورة مسبقاً
+    WidgetsBinding.instance.addPostFrameCallback((_) {
+      if (widget.initialPhotoPath != null || widget.initialPhotoBytes != null) {
+        _handleIncomingPhoto(
+          widget.initialPhotoPath,
+          widget.initialPhotoBytes,
+          widget.initialMessage,
+        );
+      } else if (widget.initialMessage != null &&
+          widget.initialMessage!.trim().isNotEmpty) {
+        _send(widget.initialMessage!);
+      }
+    });
   }
 
   @override
@@ -116,121 +188,99 @@ class _AiChatScreenState extends State<AiChatScreen> {
       if (_scrollCtrl.hasClients) {
         _scrollCtrl.animateTo(
           _scrollCtrl.position.maxScrollExtent,
-          duration: const Duration(milliseconds: 250),
+          duration: const Duration(milliseconds: 300),
           curve: Curves.easeOut,
         );
       }
     });
   }
 
-  // رد وهمي حسب كلمات في الرسالة (بدل الـ AI الحقيقي)
-  List<_ChatMessage> _mockReply(String text) {
-    final t = text.toLowerCase();
+  Future<void> _handleIncomingPhoto(
+    String? path,
+    Uint8List? bytes,
+    String? initialText,
+  ) async {
+    if (path != null) _attachedPhotos.add(path);
 
-    bool has(List<String> words) => words.any(t.contains);
-
-    if (has([
-      'emergency',
-      'طوارئ',
-      'gas',
-      'غاز',
-      'spark',
-      'شرار',
-      'fire',
-      'حريق',
-    ])) {
-      return [
-        const _ChatMessage.ai(
-          'This sounds urgent. Please stay safe, and I will look for the nearest available technician right away.',
-        ),
-        const _ChatMessage.summary(
-          service: 'Emergency',
-          urgency: 'High',
-          issue: 'Urgent safety issue',
-          confidence: 0.92,
-        ),
-      ];
-    }
-    if (has(['ac', 'تكييف', 'cooling', 'air condition'])) {
-      return [
-        const _ChatMessage.ai(
-          'It sounds like your AC may have a cooling or airflow issue.',
-        ),
-        const _ChatMessage.summary(
-          service: 'Air Conditioning',
-          urgency: 'Medium',
-          issue: 'Cooling / Airflow Problem',
-          confidence: 0.87,
-        ),
-        const _ChatMessage.ai(
-          'Is the AC making any unusual sounds?',
-          options: ['Yes', 'No', 'Not sure'],
-        ),
-      ];
-    }
-    if (has([
-      'leak',
-      'pipe',
-      'water',
-      'plumb',
-      'تسريب',
-      'سباك',
-      'مياه',
-      'ماسورة',
-    ])) {
-      return [
-        const _ChatMessage.ai('This looks like a plumbing problem.'),
-        const _ChatMessage.summary(
-          service: 'Plumbing',
-          urgency: 'Medium',
-          issue: 'Water leak',
-          confidence: 0.82,
-        ),
-        const _ChatMessage.ai(
-          'Is the water still running right now?',
-          options: ['Yes', 'No', 'Not sure'],
-        ),
-      ];
-    }
-    if (has(['light', 'power', 'electric', 'socket', 'كهرب', 'نور', 'فيش'])) {
-      return [
-        const _ChatMessage.ai('This looks like an electrical problem.'),
-        const _ChatMessage.summary(
-          service: 'Electrical',
-          urgency: 'Medium',
-          issue: 'Power / wiring issue',
-          confidence: 0.8,
-        ),
-        const _ChatMessage.ai(
-          'Did the problem start suddenly?',
-          options: ['Yes', 'No', 'Not sure'],
-        ),
-      ];
-    }
-    if (t == 'yes' || t == 'no' || t == 'not sure') {
-      return [
-        const _ChatMessage.ai(
-          'Thanks, that helps. I can show you the best technicians for this job now.',
-        ),
-      ];
-    }
-    return [
-      const _ChatMessage.ai(
-        'Can you tell me more? For example: which appliance or room, and what exactly is happening?',
-      ),
-    ];
-  }
-
-  Future<void> _reply(String userText) async {
-    setState(() => _isTyping = true);
-    _scrollToBottom();
-    await Future.delayed(const Duration(milliseconds: 900));
-    if (!mounted) return;
     setState(() {
-      _isTyping = false;
-      _messages.addAll(_mockReply(userText));
+      _messages.add(
+        _ChatMessage.user(
+          initialText ?? 'أرفقت صورة المشكلة للتحليل',
+          photoPath: path,
+          photoBytes: bytes,
+        ),
+      );
     });
     _scrollToBottom();
+    await _diagnoseAndReply(initialText ?? 'فحص الصورة المرفقة', bytes: bytes);
+  }
+
+  Future<void> _diagnoseAndReply(String userText, {Uint8List? bytes}) async {
+    setState(() => _isTyping = true);
+    _scrollToBottom();
+
+    try {
+      // 1. تشخيص المشكلة بالذكاء الاصطناعي (Gemini أو المحرك الداخلي)
+      final diagnosis = await FixlyAiService.instance.diagnoseProblem(
+        description: userText,
+        imageBytes: bytes,
+      );
+
+      // 2. جلب الفنيين وتطبيق خوارزمية الترشيح
+      final allTechnicians = await DatabaseSeeder.instance.getTechnicians();
+      final rankedTechnicians = FixlyAiService.instance.rankTechnicians(
+        technicians: allTechnicians,
+        diagnosis: diagnosis,
+      );
+
+      if (!mounted) return;
+
+      setState(() {
+        _isTyping = false;
+
+        // رسالة نصيحة الأمان
+        if (diagnosis.safetyAdvice.isNotEmpty) {
+          _messages.add(_ChatMessage.ai(diagnosis.safetyAdvice));
+        }
+
+        // كارت ملخص فهم الذكاء الاصطناعي
+        _messages.add(
+          _ChatMessage.summary(
+            service: diagnosis.serviceCategory,
+            urgency: diagnosis.urgency,
+            issue: diagnosis.issueSummary,
+            needsExpert: diagnosis.needsExpert,
+            confidence: diagnosis.confidence,
+            safetyAdvice: diagnosis.safetyAdvice,
+            technicianBrief: diagnosis.technicianBrief,
+          ),
+        );
+
+        // كارت ترشيح الفنيين المتوافقين مع المشكلة
+        _messages.add(
+          _ChatMessage.recommendation(
+            rankedTechnicians.take(3).toList(),
+            service: diagnosis.serviceCategory,
+            issue: diagnosis.issueSummary,
+            urgency: diagnosis.urgency,
+            needsExpert: diagnosis.needsExpert,
+            technicianBrief: diagnosis.technicianBrief,
+          ),
+        );
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      setState(() {
+        _isTyping = false;
+        _messages.add(
+          const _ChatMessage.ai(
+            'حدث خطأ أثناء الاتصال بالذكاء الاصطناعي، لكن يمكنك متابعة الطلب واختيار الفني المناسب.',
+          ),
+        );
+      });
+      _scrollToBottom();
+    }
   }
 
   void _send(String text) {
@@ -239,39 +289,143 @@ class _AiChatScreenState extends State<AiChatScreen> {
     setState(() => _messages.add(_ChatMessage.user(t)));
     _inputCtrl.clear();
     _scrollToBottom();
-    _reply(t);
+    _diagnoseAndReply(t);
   }
 
   Future<void> _pickPhoto(ImageSource source) async {
     try {
       final file = await _picker.pickImage(source: source, imageQuality: 80);
       if (file == null || !mounted) return;
-      setState(
-        () => _messages.add(_ChatMessage.user('📷 Photo: ${file.name}')),
-      );
-      _scrollToBottom();
-      setState(() => _isTyping = true);
-      await Future.delayed(const Duration(milliseconds: 900));
-      if (!mounted) return;
+
+      final bytes = await file.readAsBytes();
+      _attachedPhotos.add(file.path);
+
       setState(() {
-        _isTyping = false;
         _messages.add(
-          const _ChatMessage.ai(
-            'Thanks for the photo. Can you also describe what is wrong in a few words?',
+          _ChatMessage.user(
+            '📷 صورة مرفقة: ${file.name}',
+            photoPath: file.path,
+            photoBytes: bytes,
           ),
         );
       });
       _scrollToBottom();
+
+      await _diagnoseAndReply(
+        'يرجى تحليل صورة العطل المرفقة: ${file.name}',
+        bytes: bytes,
+      );
     } catch (_) {
       if (!mounted) return;
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open the camera/gallery')),
+        const SnackBar(content: Text('تعذر فتح الكاميرا أو المعرض')),
       );
+    }
+  }
+
+  Future<String?> _askAddress() async {
+    final ctrl = TextEditingController();
+    String? error;
+
+    final result = await showDialog<String>(
+      context: context,
+      builder: (ctx) => StatefulBuilder(
+        builder: (ctx, setLocal) => AlertDialog(
+          title: const Text('أين موقع المشكلة؟'),
+          content: TextField(
+            controller: ctrl,
+            maxLines: 2,
+            decoration: InputDecoration(
+              hintText: 'الشارع، رقم العمارة، الطابق، والمنطقة',
+              errorText: error,
+            ),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () {
+                final t = ctrl.text.trim();
+                if (t.length < 5) {
+                  setLocal(() => error = 'يرجى كتابة عنوان واضح وكامل');
+                  return;
+                }
+                Navigator.pop(ctx, t);
+              },
+              child: const Text('متابعة'),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+    return result;
+  }
+
+  /// إرسال الطلب للفني بالصور وملخص الـ AI
+  Future<void> _sendJobToTechnician({
+    required TechnicianModel tech,
+    required String service,
+    required String issue,
+    required String urgency,
+    required bool needsExpert,
+    String? aiSummary,
+  }) async {
+    if (_isCreatingBooking) return;
+
+    final profile = ProfileStore.instance;
+    String? address = profile.defaultAddress?.address;
+
+    if (address == null) {
+      address = await _askAddress();
+      if (address == null || !mounted) return;
+      profile.addAddress('المنزل', address);
+    }
+
+    setState(() => _isCreatingBooking = true);
+
+    try {
+      await BookingStore.instance.create(
+        service: service,
+        issue: issue,
+        urgency: urgency,
+        address: address,
+        paymentMethod: 'كاش أو فيزا',
+        technicianId: tech.id,
+        technicianName: tech.name,
+        technicianPhone: tech.phone,
+        aiSummary: aiSummary,
+        needsExpert: needsExpert,
+        photoUrls: List<String>.from(_attachedPhotos),
+      );
+
+      if (!mounted) return;
+      setState(() {
+        _requestedTechIds.add(tech.id);
+        _messages.add(
+          _ChatMessage.success(
+            'تم إرسال الطلب بنجاح إلى الفني (${tech.name}) مع كافة تفاصيل العطل والصور المرفقة.\n'
+            'الفني سيقوم بمراجعة الطلب وتحديد السعر النهائي فوراً.',
+            selectedTech: tech,
+          ),
+        );
+      });
+      _scrollToBottom();
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('فشل إرسال الطلب: $e')));
+    } finally {
+      if (mounted) setState(() => _isCreatingBooking = false);
     }
   }
 
   // ---------- Header ----------
   Widget _header() {
+    final isAr = appLocale.value.languageCode == 'ar';
     return Container(
       padding: const EdgeInsets.fromLTRB(16, 12, 20, 12),
       decoration: const BoxDecoration(
@@ -279,62 +433,53 @@ class _AiChatScreenState extends State<AiChatScreen> {
         border: Border(bottom: BorderSide(color: kBorder, width: 0.8)),
       ),
       child: Row(
-        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
           InkWell(
             onTap: () => Navigator.maybePop(context),
             borderRadius: BorderRadius.circular(16),
             child: Container(
-              width: 52,
-              height: 52,
+              width: 48,
+              height: 48,
               decoration: BoxDecoration(
                 color: Colors.white,
                 borderRadius: BorderRadius.circular(16),
                 border: Border.all(color: kBorder.withValues(alpha: 0.6)),
               ),
-              child: const Icon(Icons.chevron_left, color: kNavy, size: 28),
+              child: const Icon(Icons.arrow_back, color: kNavy, size: 24),
             ),
           ),
           const SizedBox(width: 14),
           Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
+            child: Row(
               children: [
-                Row(
+                Container(
+                  width: 44,
+                  height: 44,
+                  decoration: BoxDecoration(
+                    color: kNavy,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  child: const Icon(Icons.auto_awesome, color: _cyan, size: 22),
+                ),
+                const SizedBox(width: 12),
+                Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
                     Text(
-                      'Fixly AI',
+                      isAr ? 'مساعد Fixly الذكي' : 'Fixly AI Assistant',
                       style: GoogleFonts.manrope(
-                        fontSize: 22,
+                        fontSize: 17,
                         fontWeight: FontWeight.w800,
                         color: kNavy,
                       ),
                     ),
-                    const SizedBox(width: 10),
-                    Container(
-                      padding: const EdgeInsets.symmetric(
-                        horizontal: 12,
-                        vertical: 4,
-                      ),
-                      decoration: BoxDecoration(
-                        color: _greenBg,
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: Text(
-                        'Online',
-                        style: GoogleFonts.manrope(
-                          fontSize: 13,
-                          fontWeight: FontWeight.w800,
-                          color: _greenText,
-                        ),
-                      ),
+                    Text(
+                      isAr
+                          ? 'تشخيص فوري وترشيح الفني الأنسب'
+                          : 'Smart diagnosis & technician matching',
+                      style: GoogleFonts.manrope(fontSize: 12, color: kGrey),
                     ),
                   ],
-                ),
-                const SizedBox(height: 2),
-                Text(
-                  'Tell me what’s wrong and I’ll help you find the right technician.',
-                  style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
                 ),
               ],
             ),
@@ -344,251 +489,224 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
-  // ---------- Bubbles ----------
-  Widget _userBubble(String text) {
+  // ---------- الرسائل والفقاعات ----------
+  Widget _userBubble(String text, {String? photoPath, Uint8List? bytes}) {
     return Align(
       alignment: Alignment.centerRight,
       child: ConstrainedBox(
         constraints: BoxConstraints(
-          maxWidth: MediaQuery.of(context).size.width * 0.75,
+          maxWidth: MediaQuery.of(context).size.width * 0.8,
         ),
         child: Container(
-          padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 18),
+          padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
           decoration: const BoxDecoration(
             color: kNavy,
             borderRadius: BorderRadius.only(
-              topLeft: Radius.circular(24),
-              topRight: Radius.circular(24),
-              bottomLeft: Radius.circular(24),
-              bottomRight: Radius.circular(6),
+              topLeft: Radius.circular(20),
+              topRight: Radius.circular(20),
+              bottomLeft: Radius.circular(20),
+              bottomRight: Radius.circular(4),
             ),
           ),
-          child: Text(
-            text,
-            style: GoogleFonts.manrope(
-              fontSize: 18,
-              height: 1.35,
-              color: Colors.white,
-            ),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              if (bytes != null) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.memory(
+                    bytes,
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ] else if (photoPath != null && kIsWeb == false) ...[
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(12),
+                  child: Image.file(
+                    File(photoPath),
+                    height: 160,
+                    width: double.infinity,
+                    fit: BoxFit.cover,
+                    errorBuilder: (_, _, _) => const SizedBox.shrink(),
+                  ),
+                ),
+                const SizedBox(height: 8),
+              ],
+              Text(
+                text,
+                style: GoogleFonts.manrope(
+                  fontSize: 15,
+                  height: 1.4,
+                  color: Colors.white,
+                ),
+              ),
+            ],
           ),
         ),
       ),
-    );
-  }
-
-  Widget _avatar() {
-    return Container(
-      width: 46,
-      height: 46,
-      decoration: BoxDecoration(
-        color: kNavy,
-        borderRadius: BorderRadius.circular(14),
-      ),
-      child: const Icon(Icons.auto_awesome, color: _cyan, size: 20),
     );
   }
 
   Widget _aiBubble(String text) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 18),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 14),
       decoration: BoxDecoration(
         color: Colors.white,
         border: Border.all(color: kBorder.withValues(alpha: 0.7)),
         borderRadius: const BorderRadius.only(
-          topLeft: Radius.circular(24),
-          topRight: Radius.circular(24),
-          bottomRight: Radius.circular(24),
-          bottomLeft: Radius.circular(6),
+          topLeft: Radius.circular(20),
+          topRight: Radius.circular(20),
+          bottomRight: Radius.circular(20),
+          bottomLeft: Radius.circular(4),
         ),
       ),
       child: Text(
         text,
-        style: GoogleFonts.manrope(fontSize: 18, height: 1.35, color: kNavy),
+        style: GoogleFonts.manrope(fontSize: 15, height: 1.4, color: kNavy),
       ),
     );
   }
 
-  Widget _aiRow(
-    Widget content, {
-    bool showAvatar = true,
-    List<String> options = const [],
-    bool isLast = false,
-  }) {
-    return Row(
-      crossAxisAlignment: CrossAxisAlignment.end,
-      children: [
-        showAvatar ? _avatar() : const SizedBox(width: 46),
-        const SizedBox(width: 14),
-        Flexible(
-          child: Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              content,
-              if (options.isNotEmpty && isLast) ...[
-                const SizedBox(height: 16),
-                Wrap(
-                  spacing: 12,
-                  runSpacing: 10,
-                  children: options.map(_optionChip).toList(),
-                ),
-              ],
-            ],
-          ),
-        ),
-        const SizedBox(width: 24),
-      ],
-    );
-  }
-
-  Widget _optionChip(String label) {
-    return InkWell(
-      onTap: () => _send(label),
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 26, vertical: 14),
-        decoration: BoxDecoration(
-          color: Colors.white,
-          borderRadius: BorderRadius.circular(30),
-          border: Border.all(color: kNavy, width: 1.6),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 18,
-            fontWeight: FontWeight.w800,
-            color: kNavy,
-          ),
-        ),
-      ),
-    );
-  }
-
-  // ---------- Summary card ----------
-  Widget _smallLabel(String t) => Text(
-    t,
-    style: GoogleFonts.manrope(
-      fontSize: 13,
-      fontWeight: FontWeight.w800,
-      letterSpacing: 1.1,
-      color: kGrey,
-    ),
-  );
-
+  // ---------- كارت تشخيص الذكاء الاصطناعي ----------
   Widget _summaryCard(_ChatMessage m) {
-    final percent = ((m.confidence ?? 0) * 100).round();
+    final isAr = appLocale.value.languageCode == 'ar';
+    final percent = ((m.confidence ?? 0.9) * 100).round();
+
     return Container(
+      width: double.infinity,
       decoration: BoxDecoration(
         color: Colors.white,
-        borderRadius: BorderRadius.circular(22),
-        border: Border.all(color: kBorder.withValues(alpha: 0.7)),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFF14B8D6), width: 1.2),
       ),
       clipBehavior: Clip.antiAlias,
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Header
           Container(
-            width: double.infinity,
-            padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 16),
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
             color: kNavy,
-            child: Text(
-              'WHAT I UNDERSTOOD',
-              style: GoogleFonts.manrope(
-                fontSize: 14,
-                fontWeight: FontWeight.w800,
-                letterSpacing: 1.3,
-                color: _cyan,
-              ),
+            child: Row(
+              children: [
+                const Icon(Icons.psychology, color: _cyan, size: 20),
+                const SizedBox(width: 8),
+                Text(
+                  isAr ? 'ملخص تشخيص FIXLY AI' : 'WHAT FIXLY AI UNDERSTOOD',
+                  style: GoogleFonts.manrope(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w800,
+                    letterSpacing: 1.1,
+                    color: _cyan,
+                  ),
+                ),
+              ],
             ),
           ),
           Padding(
-            padding: const EdgeInsets.all(24),
+            padding: const EdgeInsets.all(16),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    Expanded(
-                      flex: 6,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _smallLabel('DETECTED SERVICE'),
-                          const SizedBox(height: 4),
-                          Text(
-                            m.service ?? '',
-                            style: GoogleFonts.manrope(
-                              fontSize: 20,
-                              fontWeight: FontWeight.w800,
-                              color: kNavy,
-                            ),
+                    Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          isAr ? 'الخدمة المقترحة' : 'DETECTED SERVICE',
+                          style: GoogleFonts.manrope(
+                            fontSize: 11,
+                            fontWeight: FontWeight.w800,
+                            color: kGrey,
                           ),
-                        ],
-                      ),
+                        ),
+                        Text(
+                          m.service ?? '',
+                          style: GoogleFonts.manrope(
+                            fontSize: 17,
+                            fontWeight: FontWeight.w800,
+                            color: kNavy,
+                          ),
+                        ),
+                      ],
                     ),
-                    Expanded(
-                      flex: 4,
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          _smallLabel('URGENCY'),
-                          const SizedBox(height: 6),
-                          Container(
-                            padding: const EdgeInsets.symmetric(
-                              horizontal: 14,
-                              vertical: 6,
-                            ),
-                            decoration: BoxDecoration(
-                              color: _amberBg,
-                              borderRadius: BorderRadius.circular(20),
-                            ),
-                            child: Text(
-                              m.urgency ?? '',
-                              style: GoogleFonts.manrope(
-                                fontSize: 15,
-                                fontWeight: FontWeight.w800,
-                                color: _amberText,
-                              ),
-                            ),
-                          ),
-                        ],
+                    // بادج مستوى الخبرة المطلوبة
+                    Container(
+                      padding: const EdgeInsets.symmetric(
+                        horizontal: 10,
+                        vertical: 5,
+                      ),
+                      decoration: BoxDecoration(
+                        color: m.needsExpert
+                            ? const Color(0xFFFFF3D6)
+                            : const Color(0xFFDDF3E6),
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: Text(
+                        m.needsExpert
+                            ? (isAr ? 'يحتاج خبير معتمد ★' : 'Needs Expert ★')
+                            : (isAr ? 'صيانة عامة' : 'General Tech'),
+                        style: GoogleFonts.manrope(
+                          fontSize: 12,
+                          fontWeight: FontWeight.w800,
+                          color: m.needsExpert
+                              ? const Color(0xFF8A5300)
+                              : const Color(0xFF14733A),
+                        ),
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 18),
-                _smallLabel('POSSIBLE ISSUE'),
-                const SizedBox(height: 4),
+                const SizedBox(height: 12),
+                Text(
+                  isAr ? 'العطل المحتمل' : 'POSSIBLE ISSUE',
+                  style: GoogleFonts.manrope(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: kGrey,
+                  ),
+                ),
+                const SizedBox(height: 2),
                 Text(
                   m.issue ?? '',
                   style: GoogleFonts.manrope(
-                    fontSize: 20,
-                    fontWeight: FontWeight.w800,
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
                     color: kNavy,
                   ),
                 ),
-                const SizedBox(height: 18),
+                const SizedBox(height: 12),
                 Row(
                   mainAxisAlignment: MainAxisAlignment.spaceBetween,
                   children: [
-                    _smallLabel('AI CONFIDENCE'),
+                    Text(
+                      isAr ? 'دقة التشخيص' : 'AI CONFIDENCE',
+                      style: GoogleFonts.manrope(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w800,
+                        color: kGrey,
+                      ),
+                    ),
                     Text(
                       '$percent%',
                       style: GoogleFonts.manrope(
-                        fontSize: 16,
+                        fontSize: 13,
                         fontWeight: FontWeight.w800,
                         color: kNavy,
                       ),
                     ),
                   ],
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(6),
                   child: LinearProgressIndicator(
-                    value: m.confidence ?? 0,
-                    minHeight: 8,
+                    value: m.confidence ?? 0.9,
+                    minHeight: 6,
                     color: _cyan,
                     backgroundColor: _trackBg,
                   ),
@@ -601,254 +719,441 @@ class _AiChatScreenState extends State<AiChatScreen> {
     );
   }
 
- Future<String?> _askAddress() async {
-    final ctrl = TextEditingController();
-    String? error;
+  // ---------- كارت ترشيح الفنيين ----------
+  Widget _recommendationCard(_ChatMessage m) {
+    final isAr = appLocale.value.languageCode == 'ar';
+    final techs = m.recommendedTechnicians ?? [];
 
-    return showDialog<String>(
-      context: context,
-      builder: (ctx) => StatefulBuilder(
-        builder: (ctx, setLocal) => AlertDialog(
-          title: const Text('Where should the technician come?'),
-          content: TextField(
-            controller: ctrl,
-            maxLines: 2,
-            decoration: InputDecoration(
-              hintText: 'Street, building, floor, area',
-              errorText: error,
-            ),
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFF9FBFE),
+        borderRadius: BorderRadius.circular(20),
+        border: Border.all(color: const Color(0xFFCCE2FF)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(Icons.recommend, color: Color(0xFF1D5FD8), size: 22),
+              const SizedBox(width: 8),
+              Expanded(
+                child: Text(
+                  isAr
+                      ? 'الفنيون المرشحون لهذه المشكلة'
+                      : 'AI Recommended Technicians',
+                  style: GoogleFonts.manrope(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w800,
+                    color: kNavy,
+                  ),
+                ),
+              ),
+            ],
           ),
-          actions: [
-            TextButton(
-              onPressed: () => Navigator.pop(ctx),
-              child: const Text('Cancel'),
-            ),
-            TextButton(
-              onPressed: () {
-                final t = ctrl.text.trim();
-                if (t.length < 5) {
-                  setLocal(() => error = 'Enter a full address');
-                  return;
-                }
-                Navigator.pop(ctx, t);
-              },
-              child: const Text('Continue'),
-            ),
-          ],
-        ),
+          const SizedBox(height: 12),
+          ...techs.map((tech) {
+            final isRequested = _requestedTechIds.contains(tech.id);
+            return Container(
+              margin: const EdgeInsets.only(bottom: 12),
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: Colors.white,
+                borderRadius: BorderRadius.circular(16),
+                border: Border.all(
+                  color: tech.isExpert
+                      ? const Color(0xFFE5A93C).withValues(alpha: 0.5)
+                      : kBorder,
+                ),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      CircleAvatar(
+                        radius: 24,
+                        backgroundColor: const Color(0xFFDCE9FF),
+                        child: Text(
+                          tech.name
+                              .split(' ')
+                              .map((p) => p.isNotEmpty ? p[0] : '')
+                              .take(2)
+                              .join(),
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: kNavy,
+                          ),
+                        ),
+                      ),
+                      const SizedBox(width: 12),
+                      Expanded(
+                        child: Column(
+                          crossAxisAlignment: CrossAxisAlignment.start,
+                          children: [
+                            Row(
+                              children: [
+                                Flexible(
+                                  child: Text(
+                                    tech.name,
+                                    style: GoogleFonts.manrope(
+                                      fontSize: 16,
+                                      fontWeight: FontWeight.w800,
+                                      color: kNavy,
+                                    ),
+                                  ),
+                                ),
+                                if (tech.isExpert) ...[
+                                  const SizedBox(width: 4),
+                                  const Icon(
+                                    Icons.workspace_premium,
+                                    color: Color(0xFFE5A93C),
+                                    size: 18,
+                                  ),
+                                ],
+                              ],
+                            ),
+                            Text(
+                              '${tech.specialty} · ${tech.distanceKm} ${isAr ? 'كم' : 'km'}',
+                              style: GoogleFonts.manrope(
+                                fontSize: 13,
+                                color: kGrey,
+                              ),
+                            ),
+                            Row(
+                              children: [
+                                const Icon(
+                                  Icons.star,
+                                  color: Color(0xFFF5B301),
+                                  size: 15,
+                                ),
+                                const SizedBox(width: 3),
+                                Text(
+                                  '${tech.rating}',
+                                  style: GoogleFonts.manrope(
+                                    fontSize: 13,
+                                    fontWeight: FontWeight.w800,
+                                    color: kNavy,
+                                  ),
+                                ),
+                              ],
+                            ),
+                          ],
+                        ),
+                      ),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                          horizontal: 8,
+                          vertical: 4,
+                        ),
+                        decoration: BoxDecoration(
+                          color: const Color(0xFFEEF6FF),
+                          borderRadius: BorderRadius.circular(10),
+                        ),
+                        child: Text(
+                          '${tech.matchPercentage}%',
+                          style: GoogleFonts.manrope(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w800,
+                            color: const Color(0xFF1B4FA8),
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 8),
+                  Text(
+                    tech.matchReason,
+                    style: GoogleFonts.manrope(
+                      fontSize: 12,
+                      color: const Color(0xFF1C3358),
+                    ),
+                  ),
+                  const SizedBox(height: 10),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 44,
+                    child: ElevatedButton(
+                      onPressed: isRequested || _isCreatingBooking
+                          ? null
+                          : () => _sendJobToTechnician(
+                              tech: tech,
+                              service: m.service ?? 'General',
+                              issue: m.issue ?? 'Service Request',
+                              urgency: m.urgency ?? 'Medium',
+                              needsExpert: m.needsExpert,
+                              aiSummary: m.technicianBrief,
+                            ),
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: isRequested
+                            ? const Color(0xFF1F9D63)
+                            : kNavy,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(12),
+                        ),
+                      ),
+                      child: _isCreatingBooking
+                          ? const SizedBox(
+                              width: 18,
+                              height: 18,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              isRequested
+                                  ? (isAr ? 'تم الإرسال ✓' : 'Sent ✓')
+                                  : (isAr
+                                        ? 'إرسال الطلب لـ ${tech.name.split(' ').first}'
+                                        : 'Send Request to ${tech.name.split(' ').first}'),
+                              style: GoogleFonts.manrope(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w800,
+                              ),
+                            ),
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+        ],
       ),
     );
   }
 
-  Future<void> _requestTechnician(int index, _ChatMessage m) async {
-    final profile = ProfileStore.instance;
-    String? address = profile.defaultAddress?.address;
-
-    if (address == null) {
-      address = await _askAddress();
-      if (address == null || !mounted) return;
-      profile.addAddress('Home', address); // بيتحفظ كعنوان افتراضي
-    }
-
-    BookingStore.instance.create(
-      service: m.service ?? 'Other',
-      issue: m.issue ?? 'Service request',
-      urgency: m.urgency ?? 'Medium',
-      address: address,
-      paymentMethod: profile.defaultPayment.label,
+  // ---------- كارت تأكيد النجاح ----------
+  Widget _successCard(_ChatMessage m) {
+    final isAr = appLocale.value.languageCode == 'ar';
+    return Container(
+      width: double.infinity,
+      padding: const EdgeInsets.all(16),
+      decoration: BoxDecoration(
+        color: const Color(0xFFE9F9F0),
+        borderRadius: BorderRadius.circular(18),
+        border: Border.all(color: const Color(0xFFB5E8C9)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Row(
+            children: [
+              const Icon(
+                Icons.check_circle,
+                color: Color(0xFF1F9D63),
+                size: 24,
+              ),
+              const SizedBox(width: 10),
+              Text(
+                isAr ? 'تم إرسال طلبك بنجاح' : 'Request Sent Successfully',
+                style: GoogleFonts.manrope(
+                  fontSize: 16,
+                  fontWeight: FontWeight.w800,
+                  color: const Color(0xFF14733A),
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 8),
+          Text(
+            m.text ?? '',
+            style: GoogleFonts.manrope(
+              fontSize: 14,
+              height: 1.4,
+              color: const Color(0xFF1C3358),
+            ),
+          ),
+          const SizedBox(height: 12),
+          SizedBox(
+            width: double.infinity,
+            height: 44,
+            child: OutlinedButton(
+              onPressed: () {
+                Navigator.push(
+                  context,
+                  MaterialPageRoute(builder: (_) => const BookingsTab()),
+                );
+              },
+              style: OutlinedButton.styleFrom(
+                side: const BorderSide(color: Color(0xFF1F9D63)),
+                foregroundColor: const Color(0xFF14733A),
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: Text(
+                isAr ? 'متابعة الطلب في الحجوزات' : 'Track in Bookings Tab',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w800,
+                ),
+              ),
+            ),
+          ),
+        ],
+      ),
     );
-
-    setState(() {
-      _requested.add(index);
-      _messages.add(_ChatMessage.ai(
-        'Your request was sent. The technician will come to: $address. '
-        'You can follow it from the Bookings tab.',
-      ));
-    });
-    _scrollToBottom();
   }
 
-  // ---------- Messages list ----------
   Widget _messageItem(int i) {
     final m = _messages[i];
     final isLast = i == _messages.length - 1;
 
     switch (m.role) {
       case _Role.user:
-        return _userBubble(m.text ?? '');
+        return _userBubble(
+          m.text ?? '',
+          photoPath: m.photoPath,
+          bytes: m.photoBytes,
+        );
       case _Role.ai:
-        return _aiRow(
-          _aiBubble(m.text ?? ''),
-          options: m.options,
-          isLast: isLast,
+        return Row(
+          crossAxisAlignment: CrossAxisAlignment.end,
+          children: [
+            Container(
+              width: 36,
+              height: 36,
+              decoration: BoxDecoration(
+                color: kNavy,
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.auto_awesome, color: _cyan, size: 18),
+            ),
+            const SizedBox(width: 10),
+            Flexible(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  _aiBubble(m.text ?? ''),
+                  if (m.options.isNotEmpty && isLast) ...[
+                    const SizedBox(height: 10),
+                    Wrap(
+                      spacing: 8,
+                      runSpacing: 8,
+                      children: m.options.map((opt) {
+                        return InkWell(
+                          onTap: () => _send(opt),
+                          borderRadius: BorderRadius.circular(20),
+                          child: Container(
+                            padding: const EdgeInsets.symmetric(
+                              horizontal: 14,
+                              vertical: 8,
+                            ),
+                            decoration: BoxDecoration(
+                              color: Colors.white,
+                              borderRadius: BorderRadius.circular(20),
+                              border: Border.all(color: kNavy, width: 1.2),
+                            ),
+                            child: Text(
+                              opt,
+                              style: GoogleFonts.manrope(
+                                fontSize: 13,
+                                fontWeight: FontWeight.w700,
+                                color: kNavy,
+                              ),
+                            ),
+                          ),
+                        );
+                      }).toList(),
+                    ),
+                  ],
+                ],
+              ),
+            ),
+          ],
         );
       case _Role.summary:
-        return _aiRow(
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              _summaryCard(m),
-              const SizedBox(height: 12),
-              if (_requested.contains(i))
-                Text(
-                  'Request sent ✓',
-                  style: GoogleFonts.manrope(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w800,
-                    color: const Color(0xFF14733A),
-                  ),
-                )
-              else
-                SizedBox(
-                  width: double.infinity,
-                  height: 54,
-                  child: ElevatedButton(
-                    onPressed: () => _requestTechnician(i, m),
-                    style: ElevatedButton.styleFrom(
-                      backgroundColor: kNavy,
-                      foregroundColor: Colors.white,
-                      elevation: 0,
-                      shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(16),
-                      ),
-                    ),
-                    child: Text(
-                      'Request a technician',
-                      style: GoogleFonts.manrope(
-                        fontSize: 16,
-                        fontWeight: FontWeight.w800,
-                      ),
-                    ),
-                  ),
-                ),
-            ],
-          ),
-          showAvatar: false,
-        );
+        return _summaryCard(m);
+      case _Role.techRecommendation:
+        return _recommendationCard(m);
+      case _Role.success:
+        return _successCard(m);
     }
   }
 
-  // ---------- Bottom bar ----------
-  Widget _quickAction(String label, Color bg, Color fg, VoidCallback onTap) {
-    return InkWell(
-      onTap: onTap,
-      borderRadius: BorderRadius.circular(30),
-      child: Container(
-        padding: const EdgeInsets.symmetric(horizontal: 24, vertical: 14),
-        decoration: BoxDecoration(
-          color: bg,
-          borderRadius: BorderRadius.circular(30),
-        ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(
-            fontSize: 16,
-            fontWeight: FontWeight.w800,
-            color: fg,
-          ),
-        ),
+  // ---------- شريط الإدخال السفلي ----------
+  Widget _inputBar() {
+    final isAr = appLocale.value.languageCode == 'ar';
+    return Container(
+      padding: const EdgeInsets.fromLTRB(16, 10, 16, 16),
+      decoration: const BoxDecoration(
+        color: Colors.white,
+        border: Border(top: BorderSide(color: kBorder, width: 0.8)),
       ),
-    );
-  }
-
-  Widget _roundButton(
-    IconData icon,
-    VoidCallback onTap, {
-    bool filled = false,
-  }) {
-    return InkWell(
-      onTap: onTap,
-      customBorder: const CircleBorder(),
-      child: Container(
-        width: 52,
-        height: 52,
-        decoration: BoxDecoration(
-          color: filled ? kNavy : _roundBtnBg,
-          shape: BoxShape.circle,
-        ),
-        child: Icon(icon, color: filled ? Colors.white : kNavy, size: 24),
-      ),
-    );
-  }
-
-  Widget _bottomBar() {
-    return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 8, 20, 16),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Align(
-            alignment: Alignment.centerLeft,
-            child: Wrap(
-              spacing: 12,
-              runSpacing: 8,
-              children: [
-                _quickAction(
-                  'Add a photo',
-                  _lightBlueBg,
-                  _blueText,
-                  () => _pickPhoto(ImageSource.gallery),
+      child: SafeArea(
+        top: false,
+        child: Row(
+          children: [
+            // زر الكاميرا / المعرض
+            InkWell(
+              onTap: () => _pickPhoto(ImageSource.gallery),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: _roundBtnBg,
+                  borderRadius: BorderRadius.circular(14),
                 ),
-
-                _quickAction(
-                  'It’s an emergency',
-                  _redBg,
-                  _redText,
-                  () => _send('It’s an emergency'),
+                child: const Icon(
+                  Icons.camera_alt_outlined,
+                  color: kNavy,
+                  size: 22,
                 ),
-              ],
+              ),
             ),
-          ),
-          const SizedBox(height: 14),
-          Container(
-            padding: const EdgeInsets.fromLTRB(24, 6, 8, 6),
-            decoration: BoxDecoration(
-              color: Colors.white,
-              borderRadius: BorderRadius.circular(40),
-              border: Border.all(color: kBorder, width: 1.4),
-            ),
-            child: Row(
-              children: [
-                Expanded(
-                  child: TextField(
-                    controller: _inputCtrl,
-                    onSubmitted: _send,
-                    textInputAction: TextInputAction.send,
-                    style: GoogleFonts.manrope(fontSize: 17, color: kNavy),
-                    decoration: InputDecoration(
-                      border: InputBorder.none,
-                      hintText: 'Describe your problem...',
-                      hintStyle: GoogleFonts.manrope(
-                        fontSize: 17,
-                        color: kGrey,
-                      ),
-                    ),
+            const SizedBox(width: 8),
+            // حقل الكتابة
+            Expanded(
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 14),
+                decoration: BoxDecoration(
+                  color: const Color(0xFFF6F8FC),
+                  borderRadius: BorderRadius.circular(16),
+                  border: Border.all(color: kBorder),
+                ),
+                child: TextField(
+                  controller: _inputCtrl,
+                  textInputAction: TextInputAction.send,
+                  onSubmitted: _send,
+                  style: GoogleFonts.manrope(fontSize: 15, color: kNavy),
+                  decoration: InputDecoration(
+                    border: InputBorder.none,
+                    hintText: isAr
+                        ? 'اوصف المشكلة أو اسأل AI...'
+                        : 'Describe problem or ask AI...',
+                    hintStyle: GoogleFonts.manrope(fontSize: 14, color: kGrey),
                   ),
                 ),
-                _quickAction(
-                  'Add a photo',
-                  _lightBlueBg,
-                  _blueText,
-                  () => _pickPhoto(ImageSource.gallery),
-                ),
-
-                _roundButton(Icons.mic_none, () async {
-                  final text = await Navigator.push<String>(
-                    context,
-                    MaterialPageRoute(builder: (_) => const VoiceScreen()),
-                  );
-                  if (text != null && mounted) _send(text);
-                }),
-                const SizedBox(width: 8),
-                _roundButton(
-                  Icons.near_me_outlined,
-                  () => _send(_inputCtrl.text),
-                  filled: true,
-                ),
-              ],
+              ),
             ),
-          ),
-        ],
+            const SizedBox(width: 8),
+            // زر الإرسال
+            InkWell(
+              onTap: () => _send(_inputCtrl.text),
+              borderRadius: BorderRadius.circular(14),
+              child: Container(
+                width: 48,
+                height: 48,
+                decoration: BoxDecoration(
+                  color: kNavy,
+                  borderRadius: BorderRadius.circular(14),
+                ),
+                child: const Icon(
+                  Icons.send_rounded,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -864,31 +1169,40 @@ class _AiChatScreenState extends State<AiChatScreen> {
             Expanded(
               child: ListView.separated(
                 controller: _scrollCtrl,
-                padding: const EdgeInsets.fromLTRB(24, 24, 0, 24),
-                itemCount: _messages.length + (_isTyping ? 1 : 0),
-                separatorBuilder: (_, _) => const SizedBox(height: 18),
-                itemBuilder: (_, i) {
-                  if (i == _messages.length) {
-                    return Padding(
-                      padding: const EdgeInsets.only(right: 24),
-                      child: Text(
-                        'Fixly AI is typing...',
-                        style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
-                      ),
-                    );
-                  }
-                  final m = _messages[i];
-
-                  return m.role == _Role.user
-                      ? Padding(
-                          padding: const EdgeInsets.only(right: 24),
-                          child: _messageItem(i),
-                        )
-                      : _messageItem(i);
-                },
+                padding: const EdgeInsets.all(16),
+                itemCount: _messages.length,
+                separatorBuilder: (_, _) => const SizedBox(height: 14),
+                itemBuilder: (_, i) => _messageItem(i),
               ),
             ),
-            _bottomBar(),
+            if (_isTyping) ...[
+              Padding(
+                padding: const EdgeInsets.symmetric(
+                  horizontal: 20,
+                  vertical: 8,
+                ),
+                child: Row(
+                  children: [
+                    const SizedBox(
+                      width: 16,
+                      height: 16,
+                      child: CircularProgressIndicator(
+                        strokeWidth: 2,
+                        color: _cyan,
+                      ),
+                    ),
+                    const SizedBox(width: 10),
+                    Text(
+                      appLocale.value.languageCode == 'ar'
+                          ? 'الذكاء الاصطناعي يقوم بالتحليل...'
+                          : 'Fixly AI is analyzing...',
+                      style: GoogleFonts.manrope(fontSize: 13, color: kGrey),
+                    ),
+                  ],
+                ),
+              ),
+            ],
+            _inputBar(),
           ],
         ),
       ),

@@ -1,11 +1,12 @@
+import 'package:fixly/core/services/auth_service.dart';
 import 'package:flutter/material.dart';
 import 'package:flutter/services.dart';
 
-import 'package:fixly/main.dart' show appLocale;
-import 'package:fixly/core/utils/validators.dart';
+import '../core/config/admin_config.dart';
+import '../core/utils/validators.dart';
+import '../main.dart';
 import 'admin_home.dart';
 import 'admin_theme.dart';
-import 'package:fixly/core/config/admin_config.dart';
 
 /// Admin sign in: work email + password + 6-digit two-step code.
 class AdminLoginScreen extends StatefulWidget {
@@ -42,7 +43,7 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
     super.dispose();
   }
 
-  void _onSignIn() {
+  Future<void> _onSignIn() async {
     var emailError = Validators.email(_emailCtrl.text);
     if (emailError == null && !isAdminEmail(_emailCtrl.text)) {
       emailError = tr(
@@ -63,12 +64,27 @@ class _AdminLoginScreenState extends State<AdminLoginScreen> {
 
     if (emailError != null || passError != null || codeError != null) return;
 
+    final res = await AuthService().signInWithEmailOrPhone(
+      identifier: _emailCtrl.text.trim(),
+      password: _passCtrl.text,
+    );
+
+    if (!mounted) return;
+    if (res.appUser == null || !res.appUser!.isAdmin) {
+      setState(() {
+        _emailError = tr(
+          'This email is not authorized',
+          'هذا البريد غير مصرّح له',
+        );
+      });
+      return;
+    }
+
     Navigator.pushReplacement(
       context,
       MaterialPageRoute(builder: (_) => const AdminHome()),
     );
   }
-
   // ───────── pieces ─────────
 
   Widget _logoRow() {

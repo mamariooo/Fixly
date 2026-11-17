@@ -1,9 +1,8 @@
-
 name: fixly
-description: "A new Flutter project."
-publish_to: 'none'
+description: "Fixly - Smart Help. Right Technician. Right Now."
+publish_to: "none"
 
-version: 1.0.0+1
+version: 1.0.1+2
 
 environment:
   sdk: ^3.12.2
@@ -11,25 +10,27 @@ environment:
 dependencies:
   flutter:
     sdk: flutter
-
   flutter_localizations:
     sdk: flutter
-
+  firebase_core: ^5.1.0
+  firebase_auth: ^7.0.1
+  google_sign_in: ^7.2.0
+  cloud_firestore: ^7.1.0
   google_fonts: ^6.2.1
   cupertino_icons: ^1.0.8
-
-  image_picker: ^1.1.2 
-
+  image_picker: ^1.1.2
+  flutter_dotenv: ^5.1.0
+  google_generative_ai: ^0.4.7
+  shared_preferences: ^2.3.3
 
 dev_dependencies:
   flutter_test:
     sdk: flutter
-
   flutter_lints: ^6.0.0
 
 flutter:
   uses-material-design: true
 
   assets:
-    - assets/images/fixly.jpeg
-
+    - assets/images/
+    - .env

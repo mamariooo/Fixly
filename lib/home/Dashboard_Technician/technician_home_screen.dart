@@ -1,13 +1,21 @@
 import 'dart:async';
-import 'package:fixly/home/Dashboard_Technician/Earnings.dart';
-import 'package:fixly/home/Dashboard_Technician/History.dart';
-import 'package:fixly/home/Dashboard_Technician/Profile.dart';
+import 'dart:io';
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+import 'package:flutter/foundation.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fixly/core/services/booking_store.dart';
-import 'package:fixly/core/models/booking.dart';
-import 'package:fixly/core/services/notification_store.dart';
-import 'package:fixly/home/notification_screen.dart';
+
+import '../../core/database/firestore_paths.dart';
+import '../../core/database/user_repository.dart';
+import '../../core/models/booking.dart';
+import '../../core/services/booking_store.dart';
+import '../../core/services/notification_store.dart';
+import '../home.dart';
+import '../notification_screen.dart';
+import 'Earnings.dart';
+import 'History.dart';
+import 'Profile.dart';
 
 const Color kNavy = Color(0xFF1C3358);
 const Color kGrey = Color(0xFF8492A6);
@@ -27,14 +35,20 @@ class TechnicianHomeScreen extends StatefulWidget {
 }
 
 class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
+  final UserRepository _userRepo = UserRepository();
+
   bool isOnline = true;
   int seconds = 24;
   int tabIndex = 0;
   Timer? timer;
 
+  String _techName = 'أحمد حسن';
+  String _techArea = 'مدينة نصر، القاهرة';
+
   @override
   void initState() {
     super.initState();
+    _loadTechnicianProfile();
 
     timer = Timer.periodic(const Duration(seconds: 1), (t) {
       if (!mounted) {
@@ -48,6 +62,42 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         setState(() => seconds--);
       }
     });
+  }
+
+  Future<void> _loadTechnicianProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+      setState(() => _techName = user.displayName!.trim());
+    }
+
+    final appUser = await _userRepo.getUserById(user.uid);
+    if (!mounted || appUser == null) return;
+
+    setState(() {
+      if (appUser.fullName.trim().isNotEmpty) {
+        _techName = appUser.fullName.trim();
+      }
+      if (appUser.area != null && appUser.area!.trim().isNotEmpty) {
+        _techArea = appUser.area!.trim();
+      }
+    });
+  }
+
+  Future<void> _toggleOnlineStatus(bool value) async {
+    setState(() => isOnline = value);
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    try {
+      await FirebaseFirestore.instance
+          .collection(FirestorePaths.technicianLocations)
+          .doc(uid)
+          .set({
+            'isOnline': value,
+            'updatedAt': FieldValue.serverTimestamp(),
+          }, SetOptions(merge: true));
+    } catch (_) {}
   }
 
   @override
@@ -102,7 +152,6 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
-  // ---------- الطلبات والشغل (من BookingStore) ----------
   (Color, Color, String) _urgencyStyle(String urgency) {
     switch (urgency) {
       case 'High':
@@ -119,11 +168,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       listenable: BookingStore.instance,
       builder: (context, _) {
         final done = BookingStore.instance.completedJobs;
-        final earnings = done.fold<int>(0, (sum, b) => sum + (b.price ?? 0));
+        final earnings = done.fold<int>(0, (acc, b) => acc + (b.price ?? 0));
         final rated = done.where((b) => b.rating != null).toList();
         final avg = rated.isEmpty
-            ? '—'
-            : (rated.fold<int>(0, (sum, b) => sum + b.rating!) / rated.length)
+            ? '4.9'
+            : (rated.fold<int>(0, (acc, b) => acc + b.rating!) / rated.length)
                   .toStringAsFixed(1);
 
         return Row(
@@ -139,6 +188,128 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
+  /// حوار تحديد السعر وقبول الطلب
+  Future<void> _acceptWithPriceDialog(Booking req) async {
+    final priceCtrl = TextEditingController(
+      text: (req.proposedPrice ?? 250).toString(),
+    );
+    final notesCtrl = TextEditingController();
+
+    final confirmed = await showModalBottomSheet<bool>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: Padding(
+          padding: EdgeInsets.fromLTRB(
+            24,
+            20,
+            24,
+            MediaQuery.of(ctx).viewInsets.bottom + 24,
+          ),
+          child: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Center(
+                child: Container(
+                  width: 40,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: Colors.grey.shade300,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 18),
+              Text(
+                'قبول الطلب وتحديد السعر النهائي',
+                style: _text(20, FontWeight.w800, kNavy),
+              ),
+              const SizedBox(height: 6),
+              Text(
+                'أدخل السعر المقترح للخدمة شاملاً المعاينة والمصنعية بالجنيه المصري ليراه العميل ويختار طريقة الدفع (كاش أو فيزا):',
+                style: _text(13, FontWeight.w500, kGrey),
+              ),
+              const SizedBox(height: 16),
+              TextField(
+                controller: priceCtrl,
+                keyboardType: TextInputType.number,
+                style: _text(18, FontWeight.w800, kNavy),
+                decoration: InputDecoration(
+                  labelText: 'السعر النهائي (ج.م)',
+                  prefixIcon: const Icon(
+                    Icons.attach_money,
+                    color: Color(0xFF1F9D63),
+                  ),
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 12),
+              TextField(
+                controller: notesCtrl,
+                style: _text(14, FontWeight.w600, kNavy),
+                decoration: InputDecoration(
+                  labelText: 'ملاحظات إضافية للعميل (اختياري)',
+                  hintText: 'مثال: السعر يشمل المصنعية وقطع الغيار الأصلية',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(16),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+              SizedBox(
+                width: double.infinity,
+                height: 54,
+                child: ElevatedButton(
+                  onPressed: () {
+                    final p = int.tryParse(priceCtrl.text.trim());
+                    if (p == null || p <= 0) return;
+                    Navigator.pop(ctx, true);
+                  },
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: const Color(0xFF1F9D63),
+                    foregroundColor: Colors.white,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(16),
+                    ),
+                    elevation: 0,
+                  ),
+                  child: Text(
+                    'تأكيد وإرسال السعر للعميل',
+                    style: _text(16, FontWeight.w800, Colors.white),
+                  ),
+                ),
+              ),
+            ],
+          ),
+        ),
+      ),
+    );
+
+    if (confirmed == true) {
+      final price = int.tryParse(priceCtrl.text.trim()) ?? 250;
+      await BookingStore.instance.accept(
+        req,
+        proposedPrice: price,
+        technicianName: _techName,
+      );
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('تم قبول الطلب وتحديد السعر النهائي: $price ج.م'),
+        ),
+      );
+    }
+  }
+
+  // ---------- الطلبات الواردة ----------
   Widget _incomingRequest() {
     return ListenableBuilder(
       listenable: BookingStore.instance,
@@ -172,7 +343,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 ),
                 const SizedBox(height: 6),
                 Text(
-                  'أول ما عميل يطلب فني هيظهر هنا.',
+                  'أول ما عميل يطلب فني أو يرشحك AI هيظهر هنا فوراً.',
                   style: _text(14, FontWeight.w500, kGrey),
                 ),
               ],
@@ -185,7 +356,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
 
         return Container(
           width: double.infinity,
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.all(18),
           decoration: BoxDecoration(
             color: Colors.white,
             borderRadius: BorderRadius.circular(24),
@@ -204,10 +375,16 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     const Color(0xFF1B4FA8),
                   ),
                   chip(urgencyLabel, bg, fg),
+                  if (req.needsExpert)
+                    chip(
+                      'مطلوب خبير معتمد ★',
+                      const Color(0xFFFFF3D6),
+                      const Color(0xFF8A5300),
+                    ),
                 ],
               ),
               const SizedBox(height: 12),
-              Text(req.issue, style: _text(22, FontWeight.w800, kNavy)),
+              Text(req.issue, style: _text(20, FontWeight.w800, kNavy)),
               const SizedBox(height: 12),
               Row(
                 mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -217,15 +394,12 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 ],
               ),
               const SizedBox(height: 10),
-              info('العنوان', req.address ?? 'غير محدد'),
+              info('العميل', req.clientName ?? 'عميل Fixly'),
               const SizedBox(height: 8),
-              info(
-                'الدفع',
-                req.paymentMethod == 'Cash'
-                    ? 'كاش'
-                    : (req.paymentMethod ?? 'غير محدد'),
-              ),
-              const SizedBox(height: 16),
+              info('العنوان', req.address ?? 'غير محدد'),
+
+              // ملخص تشخيص الذكاء الاصطناعي
+              const SizedBox(height: 14),
               Container(
                 width: double.infinity,
                 padding: const EdgeInsets.all(14),
@@ -236,23 +410,73 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Text(
-                      'ملخص الذكاء الاصطناعي',
-                      style: _text(
-                        13,
-                        FontWeight.w800,
-                        const Color(0xFF0E7490),
-                      ),
+                    Row(
+                      children: [
+                        const Icon(
+                          Icons.auto_awesome,
+                          color: Color(0xFF0E7490),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 8),
+                        Text(
+                          'ملخص الذكاء الاصطناعي (AI Technical Brief)',
+                          style: _text(
+                            13,
+                            FontWeight.w800,
+                            const Color(0xFF0E7490),
+                          ),
+                        ),
+                      ],
                     ),
-                    const SizedBox(height: 4),
+                    const SizedBox(height: 6),
                     Text(
-                      'العميل بيبلغ عن: ${req.issue} (${req.service}).',
-                      style: _text(14, FontWeight.w500, kNavy),
+                      req.aiSummary != null && req.aiSummary!.isNotEmpty
+                          ? req.aiSummary!
+                          : 'قام العميل بوصف العطل: ${req.issue}، وينصح بالفحص والمعاينة.',
+                      style: _text(13, FontWeight.w600, kNavy),
                     ),
                   ],
                 ),
               ),
-              const SizedBox(height: 16),
+
+              // صور العطل المرفقة
+              if (req.photoUrls.isNotEmpty) ...[
+                const SizedBox(height: 14),
+                Text(
+                  'الصور المرفقة من العميل:',
+                  style: _text(13, FontWeight.w700, kNavy),
+                ),
+                const SizedBox(height: 8),
+                SizedBox(
+                  height: 90,
+                  child: ListView.separated(
+                    scrollDirection: Axis.horizontal,
+                    itemCount: req.photoUrls.length,
+                    separatorBuilder: (_, _) => const SizedBox(width: 10),
+                    itemBuilder: (_, idx) {
+                      final p = req.photoUrls[idx];
+                      return ClipRRect(
+                        borderRadius: BorderRadius.circular(12),
+                        child: !kIsWeb && File(p).existsSync()
+                            ? Image.file(
+                                File(p),
+                                width: 90,
+                                height: 90,
+                                fit: BoxFit.cover,
+                              )
+                            : Container(
+                                width: 90,
+                                height: 90,
+                                color: const Color(0xFFE5EAF1),
+                                child: const Icon(Icons.image, color: kGrey),
+                              ),
+                      );
+                    },
+                  ),
+                ),
+              ],
+
+              const SizedBox(height: 18),
               Row(
                 children: [
                   Expanded(
@@ -272,19 +496,14 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       ),
                       child: Text(
                         'رفض',
-                        style: _text(17, FontWeight.w800, kNavy),
+                        style: _text(16, FontWeight.w800, kNavy),
                       ),
                     ),
                   ),
-                  const SizedBox(width: 10),
+                  const SizedBox(width: 12),
                   Expanded(
                     child: ElevatedButton(
-                      onPressed: () {
-                        BookingStore.instance.accept(req);
-                        ScaffoldMessenger.of(context).showSnackBar(
-                          const SnackBar(content: Text('تم قبول الطلب')),
-                        );
-                      },
+                      onPressed: () => _acceptWithPriceDialog(req),
                       style: ElevatedButton.styleFrom(
                         minimumSize: const Size.fromHeight(52),
                         backgroundColor: const Color(0xFF1F9D63),
@@ -294,8 +513,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                         ),
                       ),
                       child: Text(
-                        'قبول',
-                        style: _text(17, FontWeight.w800, Colors.white),
+                        'قبول وتحديد السعر',
+                        style: _text(15, FontWeight.w800, Colors.white),
                       ),
                     ),
                   ),
@@ -308,6 +527,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
     );
   }
 
+  // ---------- الشغل الجاري ----------
   Widget _currentJob() {
     return ListenableBuilder(
       listenable: BookingStore.instance,
@@ -343,11 +563,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'مفيش شغل جاي',
-                        style: _text(17, FontWeight.w800, kNavy),
+                        'مفيش شغل جاري',
+                        style: _text(16, FontWeight.w800, kNavy),
                       ),
                       Text(
-                        'الشغل اللي بتقبله هيظهر هنا.',
+                        'الشغل اللي بتقبله هيظهر هنا وتحدث حالته خطوة بخطوة.',
                         style: _text(12, FontWeight.w500, kGrey),
                       ),
                     ],
@@ -363,16 +583,17 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         String buttonText;
         switch (job.status) {
           case BookingStatus.accepted:
-            statusText = 'تم القبول · جاهز تتحرك';
-            buttonText = 'أنا في الطريق';
+            statusText =
+                'تم القبول · السعر المحدد: ${job.price ?? 250} ج.م · جاهز للتحرك';
+            buttonText = 'أنا في الطريق للعميل';
             break;
           case BookingStatus.onTheWay:
-            statusText = 'في الطريق للعميل';
-            buttonText = 'وصلت وبدأت الشغل';
+            statusText = 'أنت في الطريق للعميل حالياً';
+            buttonText = 'وصلت وبدأت الصيانة';
             break;
           default:
-            statusText = 'الشغل شغال';
-            buttonText = 'إنهاء الشغل';
+            statusText = 'جاري العمل الآن';
+            buttonText = 'إنهاء الشغل واستلام الحساب';
         }
 
         return Container(
@@ -384,6 +605,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             border: Border.all(color: kBorder),
           ),
           child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               Row(
                 children: [
@@ -403,14 +625,21 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       children: [
                         Text(
                           job.issue,
-                          style: _text(17, FontWeight.w800, kNavy),
+                          style: _text(16, FontWeight.w800, kNavy),
                         ),
                         Text(
                           statusText,
-                          style: _text(12, FontWeight.w500, kGrey)),
-                          if (job.address != null)
-                          Text(job.address!,
-                              style: _text(12, FontWeight.w500, kGrey)),
+                          style: _text(
+                            12,
+                            FontWeight.w600,
+                            const Color(0xFF1F9D63),
+                          ),
+                        ),
+                        if (job.address != null)
+                          Text(
+                            job.address!,
+                            style: _text(12, FontWeight.w500, kGrey),
+                          ),
                       ],
                     ),
                   ),
@@ -423,7 +652,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 child: ElevatedButton(
                   onPressed: job.status == BookingStatus.inProgress
                       ? () => _finishJob(job)
-                      : () => BookingStore.instance.advance(job),
+                      : () async {
+                          await BookingStore.instance.advance(job);
+                        },
                   style: ElevatedButton.styleFrom(
                     backgroundColor: kNavy,
                     foregroundColor: Colors.white,
@@ -434,7 +665,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   ),
                   child: Text(
                     buttonText,
-                    style: _text(16, FontWeight.w800, Colors.white),
+                    style: _text(15, FontWeight.w800, Colors.white),
                   ),
                 ),
               ),
@@ -446,58 +677,70 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
   }
 
   Future<void> _finishJob(Booking job) async {
-    final ctrl = TextEditingController();
-    String? error;
+    final ctrl = TextEditingController(text: (job.price ?? 250).toString());
 
     final price = await showDialog<int>(
       context: context,
       builder: (ctx) => Directionality(
         textDirection: TextDirection.rtl,
-        child: StatefulBuilder(
-          builder: (ctx, setLocal) => AlertDialog(
-            title: Text(
-              'إنهاء الشغل',
-              style: _text(18, FontWeight.w800, kNavy),
-            ),
-            content: TextField(
-              controller: ctrl,
-              keyboardType: TextInputType.number,
-              decoration: InputDecoration(
-                labelText: 'السعر النهائي (ج.م)',
-                errorText: error,
+        child: AlertDialog(
+          title: Text(
+            'إنهاء الشغل وتأكيد الحساب',
+            style: _text(18, FontWeight.w800, kNavy),
+          ),
+          content: Column(
+            mainAxisSize: MainAxisSize.min,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Text(
+                'تأكيد المبلغ النهائي المطلوب من العميل:',
+                style: _text(13, FontWeight.w500, kGrey),
               ),
-            ),
-            actions: [
-              TextButton(
-                onPressed: () => Navigator.pop(ctx),
-                child: const Text('إلغاء'),
-              ),
-              TextButton(
-                onPressed: () {
-                  final p = int.tryParse(ctrl.text.trim());
-                  if (p == null || p <= 0) {
-                    setLocal(() => error = 'اكتب سعر صحيح');
-                    return;
-                  }
-                  Navigator.pop(ctx, p);
-                },
-                child: const Text('تأكيد'),
+              const SizedBox(height: 12),
+              TextField(
+                controller: ctrl,
+                keyboardType: TextInputType.number,
+                style: _text(18, FontWeight.w800, kNavy),
+                decoration: InputDecoration(
+                  labelText: 'المبلغ الإجمالي (ج.م)',
+                  border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                ),
               ),
             ],
           ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () {
+                final p = int.tryParse(ctrl.text.trim());
+                if (p == null || p <= 0) return;
+                Navigator.pop(ctx, p);
+              },
+              child: const Text('تأكيد الإنجاز'),
+            ),
+          ],
         ),
       ),
     );
 
+    ctrl.dispose();
     if (price == null) return;
-    BookingStore.instance.advance(job, price: price);
+    await BookingStore.instance.advance(job, price: price);
+
     if (!mounted) return;
-    ScaffoldMessenger.of(
-      context,
-    ).showSnackBar(const SnackBar(content: Text('تم إنهاء الشغل')));
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('تم إنهاء الشغل بنجاح وإرسال الفاتورة للعميل'),
+      ),
+    );
   }
 
-  // الصفحة الرئيسية
+  // الصفحة الرئيسية للفني
   Widget buildHomePage() {
     return SafeArea(
       child: SingleChildScrollView(
@@ -505,7 +748,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // الهيدر
+            // الهيدر مع زر التبديل إلى وضع العميل
             Row(
               children: [
                 Expanded(
@@ -513,22 +756,66 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                       Text(
-                        'مساء الخير يا أحمد',
-                        style: _text(23, FontWeight.w800, kNavy),
+                        'مساء الخير يا $_techName',
+                        style: _text(22, FontWeight.w800, kNavy),
                       ),
                       Text(
-                        'منطقة الخدمة: مدينة نصر',
+                        'منطقة الخدمة: $_techArea',
                         style: _text(13, FontWeight.w500, kGrey),
                       ),
                     ],
                   ),
                 ),
+
+                // زر التبديل السريع إلى وضع العميل
+                InkWell(
+                  onTap: () {
+                    Navigator.pushAndRemoveUntil(
+                      context,
+                      MaterialPageRoute(builder: (_) => const HomeScreen()),
+                      (r) => false,
+                    );
+                  },
+                  borderRadius: BorderRadius.circular(20),
+                  child: Container(
+                    padding: const EdgeInsets.symmetric(
+                      horizontal: 10,
+                      vertical: 6,
+                    ),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFDCE9FF),
+                      borderRadius: BorderRadius.circular(20),
+                      border: Border.all(color: const Color(0xFF1B4FA8)),
+                    ),
+                    child: Row(
+                      mainAxisSize: MainAxisSize.min,
+                      children: [
+                        const Icon(
+                          Icons.swap_horiz,
+                          color: Color(0xFF1B4FA8),
+                          size: 18,
+                        ),
+                        const SizedBox(width: 4),
+                        Text(
+                          'وضع العميل',
+                          style: _text(
+                            12,
+                            FontWeight.w800,
+                            const Color(0xFF1B4FA8),
+                          ),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+                const SizedBox(width: 10),
+
                 Container(
-                  width: 48,
-                  height: 48,
+                  width: 44,
+                  height: 44,
                   decoration: BoxDecoration(
                     color: Colors.white,
-                    borderRadius: BorderRadius.circular(16),
+                    borderRadius: BorderRadius.circular(14),
                     border: Border.all(color: kBorder),
                   ),
                   child: ListenableBuilder(
@@ -553,6 +840,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                           child: const Icon(
                             Icons.notifications_none,
                             color: kNavy,
+                            size: 20,
                           ),
                         ),
                       );
@@ -570,7 +858,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
                 color: kNavy,
-                borderRadius: BorderRadius.circular(28),
+                borderRadius: BorderRadius.circular(24),
               ),
               child: Row(
                 children: [
@@ -579,9 +867,9 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                       crossAxisAlignment: CrossAxisAlignment.start,
                       children: [
                         Text(
-                          'الحالة',
+                          'حالة الاستقبال',
                           style: _text(
-                            14,
+                            13,
                             FontWeight.w600,
                             const Color(0xFF9DB0D3),
                           ),
@@ -589,8 +877,8 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                         Row(
                           children: [
                             Text(
-                              isOnline ? 'متصل' : 'غير متصل',
-                              style: _text(26, FontWeight.w800, Colors.white),
+                              isOnline ? 'متصل الآن' : 'غير متصل',
+                              style: _text(24, FontWeight.w800, Colors.white),
                             ),
                             const SizedBox(width: 8),
                             CircleAvatar(
@@ -602,9 +890,11 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                           ],
                         ),
                         Text(
-                          isOnline ? 'بتستقبل طلبات' : 'مش هتوصلك طلبات جديدة',
+                          isOnline
+                              ? 'جاهز لاستقبال طلبات العملاء'
+                              : 'لن تصلك طلبات جديدة',
                           style: _text(
-                            13,
+                            12,
                             FontWeight.w500,
                             const Color(0xFF9DB0D3),
                           ),
@@ -614,9 +904,7 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                   ),
                   Switch(
                     value: isOnline,
-                    onChanged: (value) {
-                      setState(() => isOnline = value);
-                    },
+                    onChanged: _toggleOnlineStatus,
                     activeThumbColor: Colors.white,
                     activeTrackColor: const Color(0xFF14B8D6),
                     inactiveThumbColor: Colors.white,
@@ -627,18 +915,16 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
             ),
 
             const SizedBox(height: 16),
-
-            // الإحصائيات
             _statsRow(),
             const SizedBox(height: 20),
 
-            // الطلب الجديد
+            // الطلبات الواردة
             if (isOnline)
               _incomingRequest()
             else
               Container(
                 width: double.infinity,
-                padding: const EdgeInsets.symmetric(vertical: 40),
+                padding: const EdgeInsets.symmetric(vertical: 36),
                 decoration: BoxDecoration(
                   color: Colors.white,
                   borderRadius: BorderRadius.circular(24),
@@ -646,36 +932,21 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
                 ),
                 child: Column(
                   children: [
-                    Container(
-                      width: 80,
-                      height: 80,
-                      decoration: BoxDecoration(
-                        color: const Color(0xFFF0F3F8),
-                        borderRadius: BorderRadius.circular(20),
-                      ),
-                      child: const Icon(
-                        Icons.access_time,
-                        color: kGrey,
-                        size: 30,
-                      ),
-                    ),
-                    const SizedBox(height: 16),
+                    const Icon(Icons.access_time, color: kGrey, size: 30),
+                    const SizedBox(height: 12),
                     Text(
-                      'مفيش طلبات دلوقتي',
-                      style: _text(22, FontWeight.w800, kNavy),
+                      'أنت غير متصل حالياً',
+                      style: _text(18, FontWeight.w800, kNavy),
                     ),
-                    const SizedBox(height: 6),
                     Text(
-                      'ارجع متصل عشان تستقبل طلبات.',
-                      style: _text(14, FontWeight.w500, kGrey),
+                      'قم بتفعيل زر الاتصال لاستقبال طلبات الصيانة.',
+                      style: _text(13, FontWeight.w500, kGrey),
                     ),
                   ],
                 ),
               ),
 
             const SizedBox(height: 20),
-
-            // الشغل القادم
             _currentJob(),
           ],
         ),
@@ -696,16 +967,10 @@ class _TechnicianHomeScreenState extends State<TechnicianHomeScreen> {
       textDirection: TextDirection.rtl,
       child: Scaffold(
         backgroundColor: kBg,
-
-        // التنقل بين الصفحات الأربع
         body: IndexedStack(index: tabIndex, children: pages),
-
-        // الشريط السفلي الثابت
         bottomNavigationBar: BottomNavigationBar(
           currentIndex: tabIndex,
-          onTap: (index) {
-            setState(() => tabIndex = index);
-          },
+          onTap: (index) => setState(() => tabIndex = index),
           type: BottomNavigationBarType.fixed,
           backgroundColor: Colors.white,
           selectedItemColor: kNavy,

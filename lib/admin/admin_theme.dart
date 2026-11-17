@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:fixly/main.dart' show appLocale;
+import '../main.dart';
 
 /// Design tokens for the Admin console (taken from the HTML mockup).
 class A {

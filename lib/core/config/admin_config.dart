@@ -6,6 +6,7 @@ const List<String> kAdminEmails = [
   'moaz@fixly.com',
   'felobateer@fixly.com',
   'mario@fixly.com',
+  'admin@fixly.com',
 ];
 
 bool isAdminEmail(String email) {

@@ -1,48 +1,94 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 
-import 'package:fixly/Login/Login.dart';
-import 'package:fixly/core/theme/app_colors.dart';
+import '../Login/Login.dart';
+import '../core/theme/app_colors.dart';
 import 'onboarding_data.dart';
 
-/// 3-page intro shown after "Continue as customer".
-/// "Skip" and "Get Started" both lead to the customer [LoginScreen].
 class OnboardingScreen extends StatefulWidget {
-  const OnboardingScreen({super.key});
+  const OnboardingScreen({super.key, this.onGoogleSignIn});
+
+  /// Callback اختياري لربط Google Sign-In من الخارج
+  final Future<void> Function()? onGoogleSignIn;
 
   @override
   State<OnboardingScreen> createState() => _OnboardingScreenState();
 }
 
 class _OnboardingScreenState extends State<OnboardingScreen> {
-  final _ctrl = PageController();
+  final PageController _ctrl = PageController();
   int _index = 0;
+  bool _googleLoading = false;
 
   bool get _isLast => _index == onboardingPages.length - 1;
 
-  void _goToLogin() {
+  Future<void> _goToLogin() async {
+    try {
+      final prefs = await SharedPreferences.getInstance();
+      await prefs.setBool('onboarding_completed', true);
+    } catch (_) {}
+    if (!mounted) return;
     Navigator.of(context).pushReplacement(
       PageRouteBuilder(
-        pageBuilder: (_, _, _) {
-          return const LoginScreen();
+        transitionDuration: const Duration(milliseconds: 260),
+        pageBuilder: (_, _, _) => const LoginScreen(),
+        transitionsBuilder: (_, animation, _, child) {
+          final curved = CurvedAnimation(
+            parent: animation,
+            curve: Curves.easeOutCubic,
+          );
+          return FadeTransition(
+            opacity: curved,
+            child: SlideTransition(
+              position: Tween<Offset>(
+                begin: const Offset(0, 0.03),
+                end: Offset.zero,
+              ).animate(curved),
+              child: child,
+            ),
+          );
         },
-        transitionsBuilder: (_, a, _, child) => FadeTransition(
-          opacity: a,
-          child: SlideTransition(
-            position: Tween(begin: const Offset(0, .04), end: Offset.zero)
-                .animate(CurvedAnimation(parent: a, curve: Curves.easeOut)),
-            child: child,
-          ),
-        ),
       ),
     );
   }
 
+  Future<void> _handleGoogle() async {
+    if (_googleLoading) return;
+    setState(() => _googleLoading = true);
+    try {
+      if (widget.onGoogleSignIn != null) {
+        await widget.onGoogleSignIn!();
+      } else {
+        // fallback افتراضي يفتح صفحة الدخول لو مفيش callback ممرر
+        _goToLogin();
+      }
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('Google sign-in failed: $e')));
+    } finally {
+      if (mounted) setState(() => _googleLoading = false);
+    }
+  }
+
   void _next() {
-    if (_isLast) return _goToLogin();
+    if (_isLast) {
+      _goToLogin();
+      return;
+    }
     _ctrl.nextPage(
-      duration: const Duration(milliseconds: 350),
-      curve: Curves.easeOut,
+      duration: const Duration(milliseconds: 300),
+      curve: Curves.easeOutCubic,
+    );
+  }
+
+  void _jumpTo(int page) {
+    _ctrl.animateToPage(
+      page,
+      duration: const Duration(milliseconds: 280),
+      curve: Curves.easeOutCubic,
     );
   }
 
@@ -58,27 +104,156 @@ class _OnboardingScreenState extends State<OnboardingScreen> {
       backgroundColor: C.bg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(20, 12, 20, 24),
+          padding: const EdgeInsets.fromLTRB(20, 12, 20, 20),
           child: Column(
             children: [
-              _SkipButton(visible: !_isLast, onTap: _goToLogin),
+              _TopBar(
+                current: _index,
+                total: onboardingPages.length,
+                showSkip: !_isLast,
+                onSkip: _goToLogin,
+              ),
+              const SizedBox(height: 8),
               Expanded(
                 child: PageView.builder(
                   controller: _ctrl,
                   itemCount: onboardingPages.length,
                   onPageChanged: (v) => setState(() => _index = v),
-                  itemBuilder: (_, k) => _OnboardingPage(data: onboardingPages[k]),
+                  itemBuilder: (_, k) =>
+                      _OnboardingPage(data: onboardingPages[k]),
                 ),
               ),
-              _Dots(count: onboardingPages.length, current: _index),
-              const SizedBox(height: 24),
+              const SizedBox(height: 8),
+              _Dots(
+                count: onboardingPages.length,
+                current: _index,
+                onSelect: _jumpTo,
+              ),
+              const SizedBox(height: 16),
               _PrimaryButton(
                 label: _isLast ? 'Get Started' : 'Next',
+                icon: _isLast ? Icons.arrow_forward_rounded : null,
                 onTap: _next,
               ),
+              const SizedBox(height: 10),
+              _GoogleButton(loading: _googleLoading, onTap: _handleGoogle),
             ],
           ),
         ),
+      ),
+    );
+  }
+}
+
+class _GoogleButton extends StatelessWidget {
+  final bool loading;
+  final VoidCallback onTap;
+
+  const _GoogleButton({required this.loading, required this.onTap});
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      width: double.infinity,
+      height: 52,
+      child: OutlinedButton(
+        onPressed: loading ? null : onTap,
+        style: OutlinedButton.styleFrom(
+          backgroundColor: Colors.white,
+          foregroundColor: C.navy,
+          side: BorderSide(color: C.navy.withValues(alpha: 0.15), width: 1.4),
+          shape: RoundedRectangleBorder(
+            borderRadius: BorderRadius.circular(16),
+          ),
+        ),
+        child: loading
+            ? const SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2),
+              )
+            : Row(
+                mainAxisAlignment: MainAxisAlignment.center,
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  const Icon(
+                    Icons.g_mobiledata_rounded,
+                    size: 28,
+                    color: C.blue,
+                  ),
+                  const SizedBox(width: 6),
+                  Text(
+                    'Continue with Google',
+                    maxLines: 1,
+                    overflow: TextOverflow.ellipsis,
+                    style: GoogleFonts.manrope(
+                      fontWeight: FontWeight.w700,
+                      fontSize: 15,
+                      color: C.navy,
+                    ),
+                  ),
+                ],
+              ),
+      ),
+    );
+  }
+}
+
+class _TopBar extends StatelessWidget {
+  final int current;
+  final int total;
+  final bool showSkip;
+  final VoidCallback onSkip;
+
+  const _TopBar({
+    required this.current,
+    required this.total,
+    required this.showSkip,
+    required this.onSkip,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return SizedBox(
+      height: 40,
+      child: Row(
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+            decoration: BoxDecoration(
+              color: Colors.white,
+              borderRadius: BorderRadius.circular(20),
+              border: Border.all(color: C.navy.withValues(alpha: .07)),
+            ),
+            child: Text(
+              '${current + 1} / $total',
+              style: GoogleFonts.manrope(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: C.navy,
+              ),
+            ),
+          ),
+          const Spacer(),
+          AnimatedOpacity(
+            opacity: showSkip ? 1 : 0,
+            duration: const Duration(milliseconds: 180),
+            child: TextButton(
+              onPressed: showSkip ? onSkip : null,
+              style: TextButton.styleFrom(
+                foregroundColor: C.grey,
+                padding: const EdgeInsets.symmetric(horizontal: 12),
+              ),
+              child: Text(
+                'Skip',
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 13,
+                ),
+              ),
+            ),
+          ),
+        ],
       ),
     );
   }
@@ -94,9 +269,11 @@ class _OnboardingPage extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         Expanded(child: data.art()),
-        const SizedBox(height: 24),
+        const SizedBox(height: 18),
         Text(
           data.title,
+          maxLines: 2,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.manrope(
             fontSize: 24,
             height: 1.2,
@@ -104,44 +281,15 @@ class _OnboardingPage extends StatelessWidget {
             color: C.navy,
           ),
         ),
-        const SizedBox(height: 10),
+        const SizedBox(height: 8),
         Text(
           data.body,
+          maxLines: 4,
+          overflow: TextOverflow.ellipsis,
           style: GoogleFonts.manrope(fontSize: 14, height: 1.5, color: C.grey),
         ),
-        const SizedBox(height: 20),
+        const SizedBox(height: 8),
       ],
-    );
-  }
-}
-
-class _SkipButton extends StatelessWidget {
-  final bool visible;
-  final VoidCallback onTap;
-  const _SkipButton({required this.visible, required this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    return SizedBox(
-      height: 36,
-      child: Align(
-        alignment: Alignment.centerRight,
-        child: AnimatedOpacity(
-          opacity: visible ? 1 : 0,
-          duration: const Duration(milliseconds: 200),
-          child: TextButton(
-            onPressed: visible ? onTap : null,
-            child: Text(
-              'Skip',
-              style: GoogleFonts.manrope(
-                color: C.grey,
-                fontWeight: FontWeight.w600,
-                fontSize: 13,
-              ),
-            ),
-          ),
-        ),
-      ),
     );
   }
 }
@@ -149,33 +297,48 @@ class _SkipButton extends StatelessWidget {
 class _Dots extends StatelessWidget {
   final int count;
   final int current;
-  const _Dots({required this.count, required this.current});
+  final ValueChanged<int> onSelect;
+
+  const _Dots({
+    required this.count,
+    required this.current,
+    required this.onSelect,
+  });
 
   @override
   Widget build(BuildContext context) {
     return Row(
       mainAxisAlignment: MainAxisAlignment.center,
-      children: List.generate(
-        count,
-        (k) => AnimatedContainer(
-          duration: const Duration(milliseconds: 250),
-          margin: const EdgeInsets.symmetric(horizontal: 3),
-          width: k == current ? 22 : 8,
-          height: 8,
-          decoration: BoxDecoration(
-            color: k == current ? C.navy : const Color(0xFFD5DCE8),
-            borderRadius: BorderRadius.circular(4),
+      children: List.generate(count, (k) {
+        final active = k == current;
+        return GestureDetector(
+          onTap: () => onSelect(k),
+          behavior: HitTestBehavior.opaque,
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 6),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 240),
+              curve: Curves.easeOutCubic,
+              width: active ? 24 : 8,
+              height: 8,
+              decoration: BoxDecoration(
+                color: active ? C.navy : const Color(0xFFD5DCE8),
+                borderRadius: BorderRadius.circular(4),
+              ),
+            ),
           ),
-        ),
-      ),
+        );
+      }),
     );
   }
 }
 
 class _PrimaryButton extends StatelessWidget {
   final String label;
+  final IconData? icon;
   final VoidCallback onTap;
-  const _PrimaryButton({required this.label, required this.onTap});
+
+  const _PrimaryButton({required this.label, this.icon, required this.onTap});
 
   @override
   Widget build(BuildContext context) {
@@ -189,12 +352,29 @@ class _PrimaryButton extends StatelessWidget {
           foregroundColor: Colors.white,
           elevation: 0,
           shape: RoundedRectangleBorder(
-            borderRadius: BorderRadius.circular(18),
+            borderRadius: BorderRadius.circular(16),
           ),
         ),
-        child: Text(
-          label,
-          style: GoogleFonts.manrope(fontWeight: FontWeight.w700, fontSize: 15),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Flexible(
+              child: Text(
+                label,
+                maxLines: 1,
+                overflow: TextOverflow.ellipsis,
+                style: GoogleFonts.manrope(
+                  fontWeight: FontWeight.w700,
+                  fontSize: 15,
+                ),
+              ),
+            ),
+            if (icon != null) ...[
+              const SizedBox(width: 8),
+              Icon(icon, size: 18),
+            ],
+          ],
         ),
       ),
     );

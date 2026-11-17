@@ -1,6 +1,8 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
-import 'package:fixly/core/services/technician_application_store.dart';
+import '../core/models/admin_models.dart';
+import '../core/models/app_user.dart';
 import 'admin_home.dart';
 import 'admin_theme.dart';
 import 'admin_widgets.dart';
@@ -16,31 +18,113 @@ class AdminTechniciansPage extends StatefulWidget {
 }
 
 class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
-  ApplicationStatus? _filter; // null = الكل
+  AdminAppFilterStatus? _filter; // null = الكل
+  final Set<String> _processingIds = {};
 
-  String _statusLabel(ApplicationStatus s) {
+  String _statusLabel(AdminAppFilterStatus s) {
     switch (s) {
-      case ApplicationStatus.pending:
+      case AdminAppFilterStatus.pending:
         return tr('Pending', 'قيد المراجعة');
-      case ApplicationStatus.approved:
+      case AdminAppFilterStatus.approved:
         return tr('Approved', 'تمت الموافقة');
-      case ApplicationStatus.rejected:
+      case AdminAppFilterStatus.rejected:
         return tr('Rejected', 'مرفوض');
     }
   }
 
-  BadgeTone _tone(ApplicationStatus s) {
+  BadgeTone _tone(AdminAppFilterStatus s) {
     switch (s) {
-      case ApplicationStatus.pending:
+      case AdminAppFilterStatus.pending:
         return BadgeTone.amber;
-      case ApplicationStatus.approved:
+      case AdminAppFilterStatus.approved:
         return BadgeTone.green;
-      case ApplicationStatus.rejected:
+      case AdminAppFilterStatus.rejected:
         return BadgeTone.red;
     }
   }
 
-  Widget _filterChip(String label, ApplicationStatus? value) {
+  Future<void> _updateApplicationStatus({
+    required AdminTechApplication item,
+    required bool approve,
+  }) async {
+    if (_processingIds.contains(item.docId)) return;
+    setState(() => _processingIds.add(item.docId));
+
+    try {
+      final db = FirebaseFirestore.instance;
+      final appRef = db.collection('technicianApplications').doc(item.docId);
+      final userRef = db.collection('users').doc(item.docId);
+      final profileRef = db.collection('technicianProfiles').doc(item.docId);
+
+      final batch = db.batch();
+
+      if (approve) {
+        batch.set(appRef, {
+          'status': 'approved',
+          'reviewedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        batch.set(userRef, {
+          'role': UserRole.technician.toJson(),
+          'isTechnician': true,
+          'accountStatus': AccountStatus.active.toFirestore(),
+          'activeRole': UserRole.technician.toJson(),
+          'technicianSpecialty': item.skill,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        batch.set(profileRef, {
+          'name': item.name,
+          'fullName': item.name,
+          'phone': item.phone,
+          'specialty': item.skill,
+          'area': item.area,
+          'status': 'active',
+          'isAvailable': true,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      } else {
+        batch.set(appRef, {
+          'status': 'rejected',
+          'reviewedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        batch.set(userRef, {
+          'accountStatus': AccountStatus.rejected.toFirestore(),
+          'activeRole': UserRole.client.toJson(),
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+
+        batch.set(profileRef, {
+          'status': 'rejected',
+          'isAvailable': false,
+          'updatedAt': FieldValue.serverTimestamp(),
+        }, SetOptions(merge: true));
+      }
+
+      await batch.commit();
+
+      if (!mounted) return;
+      showAdminToast(
+        context,
+        approve
+            ? tr('Technician approved', 'تمت الموافقة على الفني')
+            : tr('Application rejected', 'تم رفض الطلب'),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      showAdminToast(
+        context,
+        tr('Failed to update status: $e', 'حدث خطأ أثناء التحديث: $e'),
+      );
+    } finally {
+      if (mounted) {
+        setState(() => _processingIds.remove(item.docId));
+      }
+    }
+  }
+
+  Widget _filterChip(String label, AdminAppFilterStatus? value) {
     final selected = _filter == value;
     return ChoiceChip(
       label: Text(label),
@@ -72,8 +156,8 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
     );
   }
 
-  Widget _card(TechnicianApplication a) {
-    final store = TechnicianApplicationStore.instance;
+  Widget _card(AdminTechApplication a) {
+    final isBusy = _processingIds.contains(a.docId);
 
     return AdminCard(
       child: Column(
@@ -96,19 +180,16 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
           ),
           _info(tr('Area', 'المنطقة'), a.area),
           _info(tr('ID photo', 'صورة الهوية'), a.idPhoto),
-          if (a.status == ApplicationStatus.pending) ...[
+          if (a.status == AdminAppFilterStatus.pending) ...[
             const SizedBox(height: 14),
             Row(
               children: [
                 Expanded(
                   child: OutlinedButton(
-                    onPressed: () {
-                      store.setStatus(a, ApplicationStatus.rejected);
-                      showAdminToast(
-                        context,
-                        tr('Application rejected', 'تم رفض الطلب'),
-                      );
-                    },
+                    onPressed: isBusy
+                        ? null
+                        : () =>
+                              _updateApplicationStatus(item: a, approve: false),
                     style: OutlinedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       foregroundColor: A.redText,
@@ -123,13 +204,10 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
                 const SizedBox(width: 10),
                 Expanded(
                   child: ElevatedButton(
-                    onPressed: () {
-                      store.setStatus(a, ApplicationStatus.approved);
-                      showAdminToast(
-                        context,
-                        tr('Technician approved', 'تمت الموافقة على الفني'),
-                      );
-                    },
+                    onPressed: isBusy
+                        ? null
+                        : () =>
+                              _updateApplicationStatus(item: a, approve: true),
                     style: ElevatedButton.styleFrom(
                       minimumSize: const Size.fromHeight(46),
                       backgroundColor: A.green,
@@ -139,7 +217,16 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
                         borderRadius: BorderRadius.circular(12),
                       ),
                     ),
-                    child: Text(tr('Approve', 'موافقة')),
+                    child: isBusy
+                        ? const SizedBox(
+                            width: 18,
+                            height: 18,
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2,
+                              color: Colors.white,
+                            ),
+                          )
+                        : Text(tr('Approve', 'موافقة')),
                   ),
                 ),
               ],
@@ -155,11 +242,24 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
     final narrow = MediaQuery.of(context).size.width < 600;
     final pad = narrow ? 16.0 : 32.0;
 
-    return ListenableBuilder(
-      listenable: TechnicianApplicationStore.instance,
-      builder: (context, _) {
-        final store = TechnicianApplicationStore.instance;
-        final all = store.all;
+    return StreamBuilder<QuerySnapshot>(
+      stream: FirebaseFirestore.instance
+          .collection('technicianApplications')
+          .snapshots(),
+      builder: (context, snapshot) {
+        final docs = snapshot.data?.docs ?? const [];
+        final all = docs.map(AdminTechApplication.fromDoc).toList();
+
+        final pendingCount = all
+            .where((a) => a.status == AdminAppFilterStatus.pending)
+            .length;
+        final approvedCount = all
+            .where((a) => a.status == AdminAppFilterStatus.approved)
+            .length;
+        final rejectedCount = all
+            .where((a) => a.status == AdminAppFilterStatus.rejected)
+            .length;
+
         final items = _filter == null
             ? all
             : all.where((a) => a.status == _filter).toList();
@@ -183,15 +283,15 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
                 children: [
                   KpiCard(
                     label: tr('Pending', 'قيد المراجعة'),
-                    value: '${store.countOf(ApplicationStatus.pending)}',
+                    value: '$pendingCount',
                   ),
                   KpiCard(
                     label: tr('Approved', 'تمت الموافقة'),
-                    value: '${store.countOf(ApplicationStatus.approved)}',
+                    value: '$approvedCount',
                   ),
                   KpiCard(
                     label: tr('Rejected', 'مرفوض'),
-                    value: '${store.countOf(ApplicationStatus.rejected)}',
+                    value: '$rejectedCount',
                   ),
                 ],
               ),
@@ -203,20 +303,35 @@ class _AdminTechniciansPageState extends State<AdminTechniciansPage> {
                   _filterChip('${tr('All', 'الكل')} (${all.length})', null),
                   _filterChip(
                     tr('Pending', 'قيد المراجعة'),
-                    ApplicationStatus.pending,
+                    AdminAppFilterStatus.pending,
                   ),
                   _filterChip(
                     tr('Approved', 'تمت الموافقة'),
-                    ApplicationStatus.approved,
+                    AdminAppFilterStatus.approved,
                   ),
                   _filterChip(
                     tr('Rejected', 'مرفوض'),
-                    ApplicationStatus.rejected,
+                    AdminAppFilterStatus.rejected,
                   ),
                 ],
               ),
               const SizedBox(height: 16),
-              if (items.isEmpty)
+              if (snapshot.connectionState == ConnectionState.waiting)
+                const Padding(
+                  padding: EdgeInsets.all(24),
+                  child: Center(child: CircularProgressIndicator()),
+                )
+              else if (snapshot.hasError)
+                AdminCard(
+                  child: Text(
+                    tr(
+                      'Error loading applications: ${snapshot.error}',
+                      'خطأ في تحميل الطلبات: ${snapshot.error}',
+                    ),
+                    style: aText(14, color: A.redText),
+                  ),
+                )
+              else if (items.isEmpty)
                 AdminCard(
                   child: Text(
                     tr('No applications here yet.', 'مفيش طلبات هنا لسه.'),
