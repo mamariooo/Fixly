@@ -1,10 +1,11 @@
+import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'Login.dart';
-import 'package:fixly/core/theme/app_colors.dart';
-import 'package:fixly/core/utils/validators.dart';
-import 'package:fixly/core/services/mock_session.dart';
-import 'package:fixly/home/home.dart';
+import '../core/database/user_repository.dart';
+import '../core/services/auth_service.dart';
+import '../core/theme/app_colors.dart';
+import '../core/utils/validators.dart';
+import '../home/home.dart';
 
 class SignUpScreen extends StatefulWidget {
   const SignUpScreen({super.key});
@@ -19,11 +20,15 @@ class _SignUpScreenState extends State<SignUpScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
   final _confirmCtrl = TextEditingController();
+
+  final AuthService _authService = AuthService();
+
   String? _nameError;
   String? _phoneError;
   String? _emailError;
   String? _passError;
   String? _confirmError;
+  bool _isLoading = false;
 
   @override
   void dispose() {
@@ -49,6 +54,9 @@ class _SignUpScreenState extends State<SignUpScreen> {
       hintText: hint,
       hintStyle: GoogleFonts.manrope(color: kGrey),
       prefixIcon: prefix,
+      prefixIconConstraints: prefix == null
+          ? null
+          : const BoxConstraints(minWidth: 0, minHeight: 0),
       filled: true,
       fillColor: Colors.white,
       contentPadding: const EdgeInsets.symmetric(horizontal: 20, vertical: 22),
@@ -87,39 +95,32 @@ class _SignUpScreenState extends State<SignUpScreen> {
       onChanged: (_) {
         if (_phoneError != null) setState(() => _phoneError = null);
       },
-      decoration:
-          _decoration(
-            hint: '100 123 4567',
-            errorText: _phoneError,
-            prefix: Padding(
-              padding: const EdgeInsets.only(left: 20, right: 14),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Text(
-                    '+20',
-                    style: GoogleFonts.manrope(
-                      fontSize: 17,
-                      fontWeight: FontWeight.w800,
-                      color: kNavy,
-                    ),
-                  ),
-                  const SizedBox(width: 14),
-                  Container(width: 1, height: 28, color: kBorder),
-                ],
+      decoration: _decoration(
+        hint: '100 123 4567',
+        errorText: _phoneError,
+        prefix: Padding(
+          padding: const EdgeInsets.only(left: 20, right: 14),
+          child: Row(
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              Text(
+                '+20',
+                style: GoogleFonts.manrope(
+                  fontSize: 17,
+                  fontWeight: FontWeight.w800,
+                  color: kNavy,
+                ),
               ),
-            ),
-          ).copyWith(
-            // عشان الـ prefix ياخد عرضه الطبيعي
-            prefixIconConstraints: const BoxConstraints(
-              minWidth: 0,
-              minHeight: 0,
-            ),
+              const SizedBox(width: 14),
+              Container(width: 1, height: 28, color: kBorder),
+            ],
           ),
+        ),
+      ),
     );
   }
 
-  void _onCreateAccount() {
+  Future<void> _onCreateAccount() async {
     final nameError = Validators.fullName(_nameCtrl.text);
     final phoneError = Validators.phone(_phoneCtrl.text);
     final emailError = Validators.email(_emailCtrl.text);
@@ -137,31 +138,57 @@ class _SignUpScreenState extends State<SignUpScreen> {
       _confirmError = confirmError;
     });
 
-    if (nameError != null ||
-        phoneError != null ||
-        emailError != null ||
-        passError != null ||
-        confirmError != null) {
+    if ([
+      nameError,
+      phoneError,
+      emailError,
+      passError,
+      confirmError,
+    ].any((e) => e != null)) {
       return;
     }
+    final trimmedName = _nameCtrl.text.trim();
+    final trimmedPhone = _phoneCtrl.text.trim();
+    if (await UserRepository().isPhoneTaken(trimmedPhone)) {
+      if (!mounted) return;
+      setState(() => _phoneError = 'This phone number is already registered');
+      return;
+    }
+    if (_isLoading) return;
+    setState(() => _isLoading = true);
 
-    MockSession.signUpCustomer(
-      name: _nameCtrl.text.trim(),
-      phone: _phoneCtrl.text.trim(),
-      email: _emailCtrl.text.trim(),
-    );
+    try {
+      await _authService.signUpClient(
+        fullName: trimmedName,
+        phone: trimmedPhone,
+        email: _emailCtrl.text,
+        password: _passCtrl.text,
+      );
 
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(
-        content: Text('Account created. Welcome, ${_nameCtrl.text.trim()}!'),
-      ),
-    );
+      if (!mounted) return;
 
-    Navigator.pushAndRemoveUntil(
-      context,
-      MaterialPageRoute(builder: (_) => const HomeScreen()),
-      (route) => false,
-    );
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text('Account created. Welcome, $trimmedName!')),
+      );
+
+      Navigator.pushAndRemoveUntil(
+        context,
+        MaterialPageRoute(builder: (_) => const HomeScreen()),
+        (route) => false,
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'تعذر إنشاء الحساب (${e.code})')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('حدث خطأ أثناء إنشاء الحساب: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -169,166 +196,141 @@ class _SignUpScreenState extends State<SignUpScreen> {
     return Scaffold(
       backgroundColor: kBg,
       body: SafeArea(
-        child: LayoutBuilder(
-          builder: (context, constraints) => SingleChildScrollView(
-            padding: const EdgeInsets.symmetric(horizontal: 24),
-            child: ConstrainedBox(
-              constraints: BoxConstraints(minHeight: constraints.maxHeight),
-              child: IntrinsicHeight(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const SizedBox(height: 16),
-
-                    // Back button
-                    InkWell(
-                      onTap: () => Navigator.maybePop(context),
-                      borderRadius: BorderRadius.circular(16),
-                      child: Container(
-                        width: 52,
-                        height: 52,
-                        decoration: BoxDecoration(
-                          color: Colors.white,
-                          borderRadius: BorderRadius.circular(16),
-                          border: Border.all(
-                            color: kBorder.withValues(alpha: 0.6),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.symmetric(horizontal: 24),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const SizedBox(height: 16),
+              InkWell(
+                onTap: () => Navigator.maybePop(context),
+                borderRadius: BorderRadius.circular(16),
+                child: Container(
+                  width: 52,
+                  height: 52,
+                  decoration: BoxDecoration(
+                    color: Colors.white,
+                    borderRadius: BorderRadius.circular(16),
+                    border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+                  ),
+                  child: const Icon(Icons.chevron_left, color: kNavy, size: 28),
+                ),
+              ),
+              const SizedBox(height: 28),
+              Text(
+                'Create Account',
+                style: GoogleFonts.manrope(
+                  fontSize: 34,
+                  fontWeight: FontWeight.w800,
+                  color: kNavy,
+                ),
+              ),
+              const SizedBox(height: 8),
+              Text(
+                'Takes under a minute.',
+                style: GoogleFonts.manrope(fontSize: 17, color: kGrey),
+              ),
+              const SizedBox(height: 24),
+              _label('Full name'),
+              TextField(
+                controller: _nameCtrl,
+                textCapitalization: TextCapitalization.words,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_nameError != null) setState(() => _nameError = null);
+                },
+                decoration: _decoration(
+                  hint: 'Full name',
+                  errorText: _nameError,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _label('Phone'),
+              _phoneField(),
+              const SizedBox(height: 20),
+              _label('Email'),
+              TextField(
+                controller: _emailCtrl,
+                keyboardType: TextInputType.emailAddress,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_emailError != null) setState(() => _emailError = null);
+                },
+                decoration: _decoration(hint: 'Email', errorText: _emailError),
+              ),
+              const SizedBox(height: 20),
+              _label('Password'),
+              TextField(
+                controller: _passCtrl,
+                obscureText: true,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_passError != null) setState(() => _passError = null);
+                },
+                decoration: _decoration(
+                  hint: 'Password',
+                  errorText: _passError,
+                ),
+              ),
+              const SizedBox(height: 20),
+              _label('Confirm password'),
+              TextField(
+                controller: _confirmCtrl,
+                obscureText: true,
+                style: _inputStyle,
+                onChanged: (_) {
+                  if (_confirmError != null) {
+                    setState(() => _confirmError = null);
+                  }
+                },
+                decoration: _decoration(
+                  hint: 'Confirm password',
+                  errorText: _confirmError,
+                ),
+              ),
+              const SizedBox(height: 20),
+              Text(
+                'By continuing you agree to the Terms and Privacy Policy.',
+                style: GoogleFonts.manrope(
+                  fontSize: 14,
+                  fontWeight: FontWeight.w500,
+                  color: kGrey,
+                ),
+              ),
+              const SizedBox(height: 28),
+              SizedBox(
+                width: double.infinity,
+                height: 60,
+                child: ElevatedButton(
+                  onPressed: _isLoading ? null : _onCreateAccount,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: kNavy,
+                    foregroundColor: Colors.white,
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(18),
+                    ),
+                  ),
+                  child: _isLoading
+                      ? const SizedBox(
+                          width: 24,
+                          height: 24,
+                          child: CircularProgressIndicator(
+                            strokeWidth: 2.2,
+                            color: Colors.white,
                           ),
-                        ),
-                        child: const Icon(
-                          Icons.chevron_left,
-                          color: kNavy,
-                          size: 28,
-                        ),
-                      ),
-                    ),
-                    const SizedBox(height: 28),
-
-                    Text(
-                      'Create Account',
-                      style: GoogleFonts.manrope(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        color: kNavy,
-                      ),
-                    ),
-                    const SizedBox(height: 8),
-                    Text(
-                      'Takes under a minute.',
-                      style: GoogleFonts.manrope(fontSize: 17, color: kGrey),
-                    ),
-                    const SizedBox(height: 24),
-
-                    _label('Full name'),
-                    TextField(
-                      controller: _nameCtrl,
-                      textCapitalization: TextCapitalization.words,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_nameError != null) {
-                          setState(() => _nameError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'Full name',
-                        errorText: _nameError,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _label('Phone'),
-                    _phoneField(),
-                    const SizedBox(height: 20),
-
-                    _label('Email'),
-                    TextField(
-                      controller: _emailCtrl,
-                      keyboardType: TextInputType.emailAddress,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_emailError != null) {
-                          setState(() => _emailError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'Email',
-                        errorText: _emailError,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _label('Password'),
-                    TextField(
-                      controller: _passCtrl,
-                      obscureText: true,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_passError != null) {
-                          setState(() => _passError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'Password',
-                        errorText: _passError,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    _label('Confirm password'),
-                    TextField(
-                      controller: _confirmCtrl,
-                      obscureText: true,
-                      style: _inputStyle,
-                      onChanged: (_) {
-                        if (_confirmError != null) {
-                          setState(() => _confirmError = null);
-                        }
-                      },
-                      decoration: _decoration(
-                        hint: 'Confirm password',
-                        errorText: _confirmError,
-                      ),
-                    ),
-                    const SizedBox(height: 20),
-
-                    Text(
-                      'By continuing you agree to the Terms and Privacy Policy.',
-                      style: GoogleFonts.manrope(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: kGrey,
-                      ),
-                    ),
-
-                    const Spacer(),
-                    const SizedBox(height: 24),
-
-                    SizedBox(
-                      width: double.infinity,
-                      height: 60,
-                      child: ElevatedButton(
-                        onPressed: _onCreateAccount,
-                        style: ElevatedButton.styleFrom(
-                          backgroundColor: kNavy,
-                          foregroundColor: Colors.white,
-                          elevation: 0,
-                          shape: RoundedRectangleBorder(
-                            borderRadius: BorderRadius.circular(18),
-                          ),
-                        ),
-                        child: Text(
+                        )
+                      : Text(
                           'Create Account',
                           style: GoogleFonts.manrope(
                             fontSize: 18,
                             fontWeight: FontWeight.w700,
                           ),
                         ),
-                      ),
-                    ),
-                    const SizedBox(height: 16),
-                  ],
                 ),
               ),
-            ),
+              const SizedBox(height: 24),
+            ],
           ),
         ),
       ),

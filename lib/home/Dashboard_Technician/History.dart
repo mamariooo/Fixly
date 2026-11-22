@@ -1,7 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-import 'package:fixly/Login/Login.dart';
-import 'package:fixly/core/services/booking_store.dart';
+
+import '../../core/services/booking_store.dart';
+import '../../core/theme/app_colors.dart';
 
 TextStyle _text(double size, FontWeight weight, Color color) {
   return GoogleFonts.cairo(fontSize: size, fontWeight: weight, color: color);
@@ -34,14 +35,16 @@ class JobsTab extends StatelessWidget {
           const SizedBox(width: 14),
 
           // العنوان والتفاصيل
-          Column(
-            crossAxisAlignment: CrossAxisAlignment.start,
-            children: [
-              Text(title, style: _text(19, FontWeight.w800, kNavy)),
-              Text(subtitle, style: _text(14, FontWeight.w500, kGrey)),
-            ],
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(title, style: _text(19, FontWeight.w800, kNavy)),
+                Text(subtitle, style: _text(14, FontWeight.w500, kGrey)),
+              ],
+            ),
           ),
-          const Spacer(),
+          const SizedBox(width: 10),
 
           // السعر والحالة (على الشمال)
           Column(
@@ -70,9 +73,19 @@ class JobsTab extends StatelessWidget {
     );
   }
 
-static const List<String> _months = [
-    'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو',
-    'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر',
+  static const List<String> _months = [
+    'يناير',
+    'فبراير',
+    'مارس',
+    'أبريل',
+    'مايو',
+    'يونيو',
+    'يوليو',
+    'أغسطس',
+    'سبتمبر',
+    'أكتوبر',
+    'نوفمبر',
+    'ديسمبر',
   ];
 
   String _date(DateTime d) => '${d.day} ${_months[d.month - 1]}';
@@ -112,4 +125,3 @@ static const List<String> _months = [
     );
   }
 }
-

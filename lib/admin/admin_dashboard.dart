@@ -1,31 +1,78 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 
+import '../core/models/admin_models.dart';
 import 'admin_home.dart';
 import 'admin_theme.dart';
 import 'admin_widgets.dart';
 
-/// Admin → Dashboard (KPIs, bookings, revenue, services, areas, technicians,
-/// customer satisfaction).
-class AdminDashboardPage extends StatelessWidget {
+/// Admin → Dashboard connected to Cloud Firestore.
+class AdminDashboardPage extends StatefulWidget {
   final VoidCallback? onOpenMenu;
 
   const AdminDashboardPage({super.key, this.onOpenMenu});
 
+  @override
+  State<AdminDashboardPage> createState() => _AdminDashboardPageState();
+}
+
+class _AdminDashboardPageState extends State<AdminDashboardPage> {
+  final TextEditingController _searchCtrl = TextEditingController();
+  String _searchQuery = '';
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
+
   static String _dateLine() {
     final now = DateTime.now();
     const daysEn = [
-      'Monday', 'Tuesday', 'Wednesday', 'Thursday', 'Friday', 'Saturday', 'Sunday'
+      'Monday',
+      'Tuesday',
+      'Wednesday',
+      'Thursday',
+      'Friday',
+      'Saturday',
+      'Sunday',
     ];
     const daysAr = [
-      'الاثنين', 'الثلاثاء', 'الأربعاء', 'الخميس', 'الجمعة', 'السبت', 'الأحد'
+      'الاثنين',
+      'الثلاثاء',
+      'الأربعاء',
+      'الخميس',
+      'الجمعة',
+      'السبت',
+      'الأحد',
     ];
     const monthsEn = [
-      'January', 'February', 'March', 'April', 'May', 'June', 'July',
-      'August', 'September', 'October', 'November', 'December'
+      'January',
+      'February',
+      'March',
+      'April',
+      'May',
+      'June',
+      'July',
+      'August',
+      'September',
+      'October',
+      'November',
+      'December',
     ];
     const monthsAr = [
-      'يناير', 'فبراير', 'مارس', 'أبريل', 'مايو', 'يونيو', 'يوليو',
-      'أغسطس', 'سبتمبر', 'أكتوبر', 'نوفمبر', 'ديسمبر'
+      'يناير',
+      'فبراير',
+      'مارس',
+      'أبريل',
+      'مايو',
+      'يونيو',
+      'يوليو',
+      'أغسطس',
+      'سبتمبر',
+      'أكتوبر',
+      'نوفمبر',
+      'ديسمبر',
     ];
     final d = now.weekday - 1;
     final m = now.month - 1;
@@ -48,11 +95,19 @@ class AdminDashboardPage extends StatelessWidget {
           const Icon(Icons.search_rounded, size: 18, color: A.grey),
           const SizedBox(width: 8),
           Expanded(
-            child: Text(
-              tr('Search bookings, users', 'ابحث في الحجوزات والمستخدمين'),
-              maxLines: 1,
-              overflow: TextOverflow.ellipsis,
-              style: aText(14, weight: FontWeight.w600, color: A.grey),
+            child: TextField(
+              controller: _searchCtrl,
+              onChanged: (val) => setState(() => _searchQuery = val.trim()),
+              style: aText(14, weight: FontWeight.w600, color: A.navy),
+              decoration: InputDecoration(
+                isDense: true,
+                border: InputBorder.none,
+                hintText: tr(
+                  'Search bookings, users',
+                  'ابحث في الحجوزات والمستخدمين',
+                ),
+                hintStyle: aText(14, weight: FontWeight.w600, color: A.grey),
+              ),
             ),
           ),
         ],
@@ -64,142 +119,181 @@ class AdminDashboardPage extends StatelessWidget {
   Widget build(BuildContext context) {
     final narrow = MediaQuery.of(context).size.width < 600;
     final pad = narrow ? 16.0 : 32.0;
+    final db = FirebaseFirestore.instance;
 
-    return SingleChildScrollView(
-      padding: EdgeInsets.fromLTRB(pad, 28, pad, 32),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.stretch,
-        children: [
-          AdminPageHeader(
-            title: tr('Dashboard', 'لوحة التحكم'),
-            subtitle: _dateLine(),
-            onOpenMenu: onOpenMenu,
-            actions: [
-              LayoutBuilder(
-                builder: (context, _) {
-                  // Fixed width so it sits nicely in both Row and Wrap.
-                  return SizedBox(
-                    width: narrow ? double.infinity : 240,
-                    child: _searchBox(),
-                  );
-                },
-              ),
-              HeaderPill(tr('Last 30 days', 'آخر 30 يومًا')),
-            ],
-          ),
-          const SizedBox(height: 20),
+    return StreamBuilder<QuerySnapshot>(
+      stream: db.collection('users').snapshots(),
+      builder: (context, usersSnap) {
+        return StreamBuilder<QuerySnapshot>(
+          stream: db.collection('technicianProfiles').snapshots(),
+          builder: (context, techSnap) {
+            return StreamBuilder<QuerySnapshot>(
+              stream: db.collection('service_requests').snapshots(),
+              builder: (context, reqSnap) {
+                final usersDocs = usersSnap.data?.docs ?? const [];
+                final techDocs = techSnap.data?.docs ?? const [];
+                final reqDocs = reqSnap.data?.docs ?? const [];
 
-          // ───── KPIs ─────
-          AutoFitGrid(
-            minItemWidth: 170,
-            children: [
-              KpiCard(
-                label: tr('Total customers', 'إجمالي العملاء'),
-                value: '12,480',
-                delta: '+8.2%',
-              ),
-              KpiCard(
-                label: tr('Total technicians', 'إجمالي الفنيين'),
-                value: '1,126',
-                delta: '+3.1%',
-              ),
-              KpiCard(
-                label: tr('Active jobs', 'الطلبات النشطة'),
-                value: '214',
-                note: tr('live right now', 'مباشر الآن'),
-              ),
-              KpiCard(
-                label: tr('Completed jobs', 'الطلبات المكتملة'),
-                value: '38,940',
-                delta: '+11.4%',
-              ),
-              KpiCard(
-                label: tr('Revenue', 'الإيرادات'),
-                value: tr('1.42M EGP', '1.42 مليون ج.م'),
-                delta: '+14.6%',
-              ),
-              KpiCard(
-                label: tr('Average rating', 'متوسط التقييم'),
-                value: '4.7',
-                delta: '+0.1',
-              ),
-              KpiCard(
-                label: tr('AI accuracy', 'دقة الذكاء الاصطناعي'),
-                value: '92.4%',
-                delta: '+1.3%',
-                dark: true,
-              ),
-            ],
-          ),
-          const SizedBox(height: 20),
+                final metrics = AdminDashboardMetrics.fromSnapshots(
+                  usersDocs: usersDocs,
+                  techDocs: techDocs,
+                  reqDocs: reqDocs,
+                );
 
-          // ───── Charts / lists ─────
-          AutoFitGrid(
-            minItemWidth: 340,
-            children: [
-              _bookingsCard(),
-              _revenueCard(),
-              _servicesCard(),
-              _areasCard(),
-              _techniciansCard(),
-              _satisfactionCard(),
-            ],
-          ),
-        ],
-      ),
+                final formattedRevenue = isAr
+                    ? '${metrics.totalRevenue.toStringAsFixed(0)} ج.م'
+                    : '${metrics.totalRevenue.toStringAsFixed(0)} EGP';
+
+                return SingleChildScrollView(
+                  padding: EdgeInsets.fromLTRB(pad, 28, pad, 32),
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.stretch,
+                    children: [
+                      AdminPageHeader(
+                        title: tr('Dashboard', 'لوحة التحكم'),
+                        subtitle: _dateLine(),
+                        onOpenMenu: widget.onOpenMenu,
+                        actions: [
+                          SizedBox(
+                            width: narrow ? double.infinity : 240,
+                            child: _searchBox(),
+                          ),
+                          HeaderPill(tr('Last 30 days', 'آخر 30 يومًا')),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      AutoFitGrid(
+                        minItemWidth: 170,
+                        children: [
+                          KpiCard(
+                            label: tr('Total customers', 'إجمالي العملاء'),
+                            value: '${metrics.totalCustomers}',
+                          ),
+                          KpiCard(
+                            label: tr('Total technicians', 'إجمالي الفنيين'),
+                            value: '${metrics.totalTechnicians}',
+                          ),
+                          KpiCard(
+                            label: tr('Active jobs', 'الطلبات النشطة'),
+                            value: '${metrics.activeJobs}',
+                            note: tr('live right now', 'مباشر الآن'),
+                          ),
+                          KpiCard(
+                            label: tr('Completed jobs', 'الطلبات المكتملة'),
+                            value: '${metrics.completedJobs}',
+                          ),
+                          KpiCard(
+                            label: tr('Revenue', 'الإيرادات'),
+                            value: formattedRevenue,
+                          ),
+                          KpiCard(
+                            label: tr('Average rating', 'متوسط التقييم'),
+                            value: metrics.avgRating,
+                          ),
+                          KpiCard(
+                            label: tr('AI accuracy', 'دقة الذكاء الاصطناعي'),
+                            value: '92.4%',
+                            dark: true,
+                          ),
+                        ],
+                      ),
+                      const SizedBox(height: 20),
+                      AutoFitGrid(
+                        minItemWidth: 340,
+                        children: [
+                          _bookingsCard(reqDocs),
+                          _revenueCard(metrics.totalRevenue),
+                          _servicesCard(metrics.serviceCounts, reqDocs.length),
+                          _areasCard(metrics.areaCounts),
+                          _techniciansCard(techDocs),
+                          _satisfactionCard(metrics),
+                        ],
+                      ),
+                    ],
+                  ),
+                );
+              },
+            );
+          },
+        );
+      },
     );
   }
 
-  // ───────────────────────── cards ─────────────────────────
+  Widget _bookingsCard(List<QueryDocumentSnapshot> reqDocs) {
+    final filtered = _searchQuery.isEmpty
+        ? reqDocs
+        : reqDocs.where((doc) {
+            final data = doc.data() as Map<String, dynamic>? ?? {};
+            final text =
+                '${data['category'] ?? ''} ${data['title'] ?? ''} ${data['status'] ?? ''}'
+                    .toLowerCase();
+            return text.contains(_searchQuery.toLowerCase());
+          }).toList();
 
-  Widget _bookingsCard() {
     return AdminCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
-          CardTitle(tr('Bookings', 'الحجوزات'), caption: tr('per day', 'يوميًا')),
-          Directionality(
-            textDirection: TextDirection.ltr,
-            child: Column(
+          CardTitle(
+            tr('Bookings', 'الحجوزات'),
+            caption: '${filtered.length} ${tr('total', 'إجمالي')}',
+          ),
+          if (filtered.isEmpty)
+            Text(
+              tr('No bookings yet.', 'لا توجد حجوزات بعد.'),
+              style: aText(13, color: A.grey),
+            )
+          else
+            Column(
               children: [
-                const LineChart(
-                  height: 150,
-                  gridY: [130, 90, 50],
-                  series: [
-                    LineSeries(
-                      [
-                        Offset(10, 120), Offset(50, 104), Offset(90, 112),
-                        Offset(130, 78), Offset(170, 90), Offset(210, 62),
-                        Offset(250, 70), Offset(290, 44), Offset(330, 54),
-                        Offset(390, 24),
-                      ],
-                      A.blue,
-                      fill: true,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 4),
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
-                  children: [
-                    Text(tr('1 Oct', '1 أكتوبر'), style: aText(11, color: A.grey)),
-                    Text(tr('15 Oct', '15 أكتوبر'), style: aText(11, color: A.grey)),
-                    Text(tr('30 Oct', '30 أكتوبر'), style: aText(11, color: A.grey)),
-                  ],
-                ),
+                for (final doc in filtered.take(5))
+                  Builder(
+                    builder: (_) {
+                      final data = doc.data() as Map<String, dynamic>? ?? {};
+                      return Padding(
+                        padding: const EdgeInsets.only(bottom: 8),
+                        child: Row(
+                          children: [
+                            Expanded(
+                              child: Text(
+                                (data['category'] ?? data['title'] ?? doc.id)
+                                    .toString(),
+                                maxLines: 1,
+                                overflow: TextOverflow.ellipsis,
+                                style: aText(13),
+                              ),
+                            ),
+                            const SizedBox(width: 8),
+                            AdminBadge(
+                              (data['status'] ?? 'pending').toString(),
+                              tone: BadgeTone.amber,
+                            ),
+                          ],
+                        ),
+                      );
+                    },
+                  ),
               ],
             ),
-          ),
         ],
       ),
     );
   }
 
-  Widget _revenueCard() {
+  Widget _revenueCard(double totalRevenue) {
     final months = isAr
         ? ['مايو', 'يونيو', 'يوليو', 'أغسطس', 'سبتمبر', 'أكتوبر']
         : ['May', 'Jun', 'Jul', 'Aug', 'Sep', 'Oct'];
-    const heights = [70.0, 92.0, 84.0, 112.0, 128.0, 148.0];
+    final base = totalRevenue > 0 ? (totalRevenue / 6).clamp(20.0, 148.0) : 0.0;
+    final heights = [
+      base * 0.5,
+      base * 0.65,
+      base * 0.6,
+      base * 0.8,
+      base * 0.9,
+      base,
+    ];
 
     return AdminCard(
       child: Column(
@@ -207,7 +301,7 @@ class AdminDashboardPage extends StatelessWidget {
         children: [
           CardTitle(
             tr('Revenue', 'الإيرادات'),
-            caption: tr('EGP thousands', 'بآلاف الجنيهات'),
+            caption: tr('EGP', 'جنيه مصري'),
           ),
           BarColumns(
             height: 170,
@@ -226,15 +320,10 @@ class AdminDashboardPage extends StatelessWidget {
     );
   }
 
-  Widget _servicesCard() {
-    final rows = <List<Object>>[
-      [tr('AC', 'تكييف'), 0.92, '28%'],
-      [tr('Plumbing', 'سباكة'), 0.78, '23%'],
-      [tr('Electrical', 'كهرباء'), 0.66, '19%'],
-      [tr('Appliances', 'أجهزة منزلية'), 0.42, '12%'],
-      [tr('Cleaning', 'تنظيف'), 0.30, '9%'],
-      [tr('Other', 'أخرى'), 0.30, '9%'],
-    ];
+  Widget _servicesCard(Map<String, int> serviceCounts, int total) {
+    final entries = serviceCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+
     return AdminCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -243,57 +332,60 @@ class AdminDashboardPage extends StatelessWidget {
             tr('Most requested services', 'الخدمات الأكثر طلبًا'),
             caption: tr('share of jobs', 'نسبة الطلبات'),
           ),
-          for (final r in rows)
-            HBarRow(
-              label: r[0] as String,
-              labelWidth: 92,
-              fraction: r[1] as double,
-              value: r[2] as String,
-              valueWidth: 44,
-            ),
+          if (entries.isEmpty)
+            Text(
+              tr('No service data yet.', 'لا توجد بيانات خدمات بعد.'),
+              style: aText(13, color: A.grey),
+            )
+          else
+            for (final e in entries.take(6))
+              HBarRow(
+                label: e.key,
+                labelWidth: 100,
+                fraction: total > 0 ? e.value / total : 0,
+                value: '${e.value}',
+                valueWidth: 44,
+              ),
         ],
       ),
     );
   }
 
-  Widget _areasCard() {
-    final rows = <List<Object>>[
-      [tr('Nasr City', 'مدينة نصر'), 0.94, '3,120'],
-      [tr('Maadi', 'المعادي'), 0.76, '2,540'],
-      [tr('Heliopolis', 'مصر الجديدة'), 0.64, '2,110'],
-      [tr('New Cairo', 'القاهرة الجديدة'), 0.58, '1,930'],
-      [tr('Giza', 'الجيزة'), 0.44, '1,460'],
-    ];
+  Widget _areasCard(Map<String, int> areaCounts) {
+    final entries = areaCounts.entries.toList()
+      ..sort((a, b) => b.value.compareTo(a.value));
+    final maxVal = entries.isNotEmpty ? entries.first.value : 1;
+
     return AdminCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
         children: [
           CardTitle(
             tr('Most active areas', 'المناطق الأكثر نشاطًا'),
-            caption: tr('jobs this month', 'طلبات هذا الشهر'),
+            caption: tr('jobs', 'الطلبات'),
           ),
-          for (final r in rows)
-            HBarRow(
-              label: r[0] as String,
-              labelWidth: 104,
-              fraction: r[1] as double,
-              value: r[2] as String,
-              valueWidth: 48,
-              color: A.cyan,
-            ),
+          if (entries.isEmpty)
+            Text(
+              tr('No area data yet.', 'لا توجد بيانات مناطق بعد.'),
+              style: aText(13, color: A.grey),
+            )
+          else
+            for (final e in entries.take(5))
+              HBarRow(
+                label: e.key,
+                labelWidth: 104,
+                fraction: maxVal > 0 ? e.value / maxVal : 0,
+                value: '${e.value}',
+                valueWidth: 48,
+                color: A.cyan,
+              ),
         ],
       ),
     );
   }
 
-  Widget _techniciansCard() {
+  Widget _techniciansCard(List<QueryDocumentSnapshot> techDocs) {
     const flexes = [2, 1, 1, 1];
-    final rows = <List<Object>>[
-      [tr('Ahmed Hassan', 'أحمد حسن'), '96', '4.8', '97%', BadgeTone.green],
-      [tr('Mahmoud Saber', 'محمود صابر'), '88', '4.9', '95%', BadgeTone.green],
-      [tr('Youssef Nabil', 'يوسف نبيل'), '81', '4.7', '92%', BadgeTone.green],
-      [tr('Karim Adel', 'كريم عادل'), '64', '4.5', '81%', BadgeTone.amber],
-    ];
     return AdminCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -309,25 +401,53 @@ class AdminDashboardPage extends StatelessWidget {
               thText(tr('Technician', 'الفني')),
               thText(tr('Jobs', 'الطلبات')),
               thText(tr('Rating', 'التقييم')),
-              thText(tr('On time', 'في الموعد')),
+              thText(tr('Status', 'الحالة')),
             ],
           ),
-          for (final r in rows)
-            TableRowX(
-              flexes: flexes,
-              cells: [
-                tdText(r[0] as String),
-                tdText(r[1] as String),
-                tdText(r[2] as String),
-                AdminBadge(r[3] as String, tone: r[4] as BadgeTone),
-              ],
-            ),
+          if (techDocs.isEmpty)
+            Padding(
+              padding: const EdgeInsets.only(top: 10),
+              child: Text(
+                tr('No technicians yet.', 'لا يوجد فنيون بعد.'),
+                style: aText(13, color: A.grey),
+              ),
+            )
+          else
+            for (final doc in techDocs.take(4))
+              Builder(
+                builder: (_) {
+                  final data = doc.data() as Map<String, dynamic>? ?? {};
+                  final status = (data['status'] ?? 'pending').toString();
+                  return TableRowX(
+                    flexes: flexes,
+                    cells: [
+                      tdText(
+                        (data['fullName'] ?? data['name'] ?? 'Technician')
+                            .toString(),
+                      ),
+                      tdText((data['completedJobs'] ?? 0).toString()),
+                      tdText(
+                        ((data['rating'] as num?)?.toDouble() ?? 0.0)
+                            .toStringAsFixed(1),
+                      ),
+                      AdminBadge(
+                        status,
+                        tone: status == 'active'
+                            ? BadgeTone.green
+                            : BadgeTone.amber,
+                      ),
+                    ],
+                  );
+                },
+              ),
         ],
       ),
     );
   }
 
-  Widget _satisfactionCard() {
+  Widget _satisfactionCard(AdminDashboardMetrics metrics) {
+    final frac = (metrics.satisfactionPct / 100).clamp(0.0, 1.0);
+
     return AdminCard(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.stretch,
@@ -339,16 +459,21 @@ class AdminDashboardPage extends StatelessWidget {
             crossAxisAlignment: WrapCrossAlignment.center,
             children: [
               DonutChart(
-                segments: const [
-                  MapEntry(289 / 352, A.green),
-                  MapEntry(42 / 352, A.amber),
+                segments: [
+                  MapEntry(frac, A.green),
+                  MapEntry((1 - frac).clamp(0.0, 1.0), A.track),
                 ],
                 center: Column(
                   mainAxisSize: MainAxisSize.min,
                   children: [
-                    Text('94%', style: aText(26, weight: FontWeight.w800)),
-                    Text(tr('satisfied', 'راضون'),
-                        style: aText(12, weight: FontWeight.w600, color: A.grey)),
+                    Text(
+                      '${metrics.satisfactionPct}%',
+                      style: aText(26, weight: FontWeight.w800),
+                    ),
+                    Text(
+                      tr('satisfied', 'راضون'),
+                      style: aText(12, weight: FontWeight.w600, color: A.grey),
+                    ),
                   ],
                 ),
               ),
@@ -356,11 +481,10 @@ class AdminDashboardPage extends StatelessWidget {
                 crossAxisAlignment: CrossAxisAlignment.start,
                 mainAxisSize: MainAxisSize.min,
                 children: [
-                  LegendDot(A.green, tr('4–5 stars · 82%', '4–5 نجوم · 82%')),
-                  const SizedBox(height: 8),
-                  LegendDot(A.amber, tr('3 stars · 12%', '3 نجوم · 12%')),
-                  const SizedBox(height: 8),
-                  LegendDot(A.track, tr('1–2 stars · 6%', '1–2 نجوم · 6%')),
+                  LegendDot(
+                    A.green,
+                    '${metrics.ratedTechniciansCount} ${tr('rated technicians', 'فني تم تقييمهم')}',
+                  ),
                 ],
               ),
             ],

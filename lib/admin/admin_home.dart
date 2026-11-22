@@ -1,11 +1,12 @@
 import 'package:flutter/material.dart';
 
-import 'package:fixly/main.dart' show appLocale, changeLanguage;
-import 'package:fixly/Splash/welcome_to_fixly.dart';
+import '../Splash/welcome_to_fixly.dart';
+import '../core/services/auth_service.dart';
+import '../main.dart';
 import 'admin_ai_monitoring.dart';
 import 'admin_dashboard.dart';
-import 'admin_theme.dart';
 import 'admin_technician.dart';
+import 'admin_theme.dart';
 
 enum AdminPage { dashboard, technicians, aiMonitoring }
 
@@ -27,7 +28,12 @@ const _navItems = <_NavItem>[
     AdminPage.dashboard,
   ),
   _NavItem(Icons.person_outline_rounded, 'Customers', 'العملاء', null),
-  _NavItem(Icons.build_outlined, 'Technicians', 'الفنيون', AdminPage.technicians),
+  _NavItem(
+    Icons.build_outlined,
+    'Technicians',
+    'الفنيون',
+    AdminPage.technicians,
+  ),
   _NavItem(Icons.calendar_today_outlined, 'Bookings', 'الحجوزات', null),
   _NavItem(Icons.format_list_bulleted_rounded, 'Services', 'الخدمات', null),
   _NavItem(Icons.warning_amber_rounded, 'Complaints', 'الشكاوى', null),
@@ -65,7 +71,9 @@ class _AdminHomeState extends State<AdminHome> {
     }
   }
 
-  void _signOut() {
+  Future<void> _signOut() async {
+    await AuthService().signOut();
+    if (!mounted) return;
     Navigator.of(context).pushAndRemoveUntil(
       MaterialPageRoute(builder: (_) => const WelcometoFixly()),
       (route) => false,
@@ -173,8 +181,9 @@ class _AdminHomeState extends State<AdminHome> {
           builder: (context, c) {
             final wide = c.maxWidth >= 900;
 
-            final VoidCallback? menu =
-                wide ? null : () => _scaffoldKey.currentState?.openDrawer();
+            final VoidCallback? menu = wide
+                ? null
+                : () => _scaffoldKey.currentState?.openDrawer();
 
             final Widget content;
             switch (_page) {
@@ -324,7 +333,6 @@ class AdminPageHeader extends StatelessWidget {
   Widget build(BuildContext context) {
     return LayoutBuilder(
       builder: (context, c) {
-        // Wide: title on the left, controls pushed to the end (like the mockup).
         if (c.maxWidth >= 820) {
           return Row(
             children: [

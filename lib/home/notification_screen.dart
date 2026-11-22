@@ -1,8 +1,8 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:fixly/Login/Login.dart';
-import 'package:fixly/core/services/notification_store.dart';
+import '../core/services/notification_store.dart';
+import '../core/theme/app_colors.dart';
 
 /// شاشة الإشعارات (للعميل بالإنجليزي، وللفني بالعربي RTL)
 class NotificationsScreen extends StatelessWidget {
@@ -87,8 +87,9 @@ class NotificationsScreen extends StatelessWidget {
                     padding: const EdgeInsets.fromLTRB(16, 12, 12, 12),
                     decoration: const BoxDecoration(
                       color: Colors.white,
-                      border:
-                          Border(bottom: BorderSide(color: kBorder, width: 0.8)),
+                      border: Border(
+                        bottom: BorderSide(color: kBorder, width: 0.8),
+                      ),
                     ),
                     child: Row(
                       children: [
@@ -101,8 +102,9 @@ class NotificationsScreen extends StatelessWidget {
                             decoration: BoxDecoration(
                               color: Colors.white,
                               borderRadius: BorderRadius.circular(16),
-                              border:
-                                  Border.all(color: kBorder.withValues(alpha: 0.6)),
+                              border: Border.all(
+                                color: kBorder.withValues(alpha: 0.6),
+                              ),
                             ),
                             child: const Icon(Icons.arrow_back, color: kNavy),
                           ),
@@ -131,8 +133,11 @@ class NotificationsScreen extends StatelessWidget {
                             child: Column(
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                const Icon(Icons.notifications_none,
-                                    size: 48, color: kGrey),
+                                const Icon(
+                                  Icons.notifications_none,
+                                  size: 48,
+                                  color: kGrey,
+                                ),
                                 const SizedBox(height: 12),
                                 Text(
                                   arabic

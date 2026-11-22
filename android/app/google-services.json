@@ -1,0 +1,54 @@
+{
+  "project_info": {
+    "project_number": "998174646288",
+    "project_id": "fixlyproject-ee762",
+    "storage_bucket": "fixlyproject-ee762.firebasestorage.app"
+  },
+  "client": [
+    {
+      "client_info": {
+        "mobilesdk_app_id": "1:998174646288:android:4e3bd6ac403b31065fea95",
+        "android_client_info": {
+          "package_name": "com.example.fixly"
+        }
+      },
+      "oauth_client": [
+        {
+          "client_id": "998174646288-38j2bvvrt89mkhcleug6rnnsi2skiuir.apps.googleusercontent.com",
+          "client_type": 1,
+          "android_info": {
+            "package_name": "com.example.fixly",
+            "certificate_hash": "3bec55f87c0efa0d83295e757dc85f8e5fb34934"
+          }
+        },
+        {
+          "client_id": "998174646288-0sc6rvmk1b3qu36ln995acifec1fq7n4.apps.googleusercontent.com",
+          "client_type": 3
+        }
+      ],
+      "api_key": [
+        {
+          "current_key": "AIzaSyAByp21aXq7U7tCKu7A7lbFlj7u2mDQ_G0"
+        }
+      ],
+      "services": {
+        "appinvite_service": {
+          "other_platform_oauth_client": [
+            {
+              "client_id": "998174646288-0sc6rvmk1b3qu36ln995acifec1fq7n4.apps.googleusercontent.com",
+              "client_type": 3
+            },
+            {
+              "client_id": "998174646288-9704fplte7tt2ue86ugk3k6n50lulf2v.apps.googleusercontent.com",
+              "client_type": 2,
+              "ios_info": {
+                "bundle_id": "com.example.fixly"
+              }
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "configuration_version": "1"
+}
