@@ -1,7 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 
-import 'package:fixly/Login/Login.dart';
+import '../core/theme/app_colors.dart';
 
 /// شات بسيط (للفني والدعم) بردود وهمية.
 class SimpleChatScreen extends StatefulWidget {
@@ -29,8 +29,9 @@ class _Msg {
 class _SimpleChatScreenState extends State<SimpleChatScreen> {
   final _ctrl = TextEditingController();
   final _scroll = ScrollController();
-  late final List<_Msg> _msgs =
-      widget.initialMessages.map((t) => _Msg(false, t)).toList();
+  late final List<_Msg> _msgs = widget.initialMessages
+      .map((t) => _Msg(false, t))
+      .toList();
   int _replyIndex = 0;
 
   @override
@@ -116,10 +117,15 @@ class _SimpleChatScreenState extends State<SimpleChatScreen> {
                       decoration: BoxDecoration(
                         color: Colors.white,
                         borderRadius: BorderRadius.circular(16),
-                        border: Border.all(color: kBorder.withValues(alpha: 0.6)),
+                        border: Border.all(
+                          color: kBorder.withValues(alpha: 0.6),
+                        ),
                       ),
-                      child: const Icon(Icons.chevron_left,
-                          color: kNavy, size: 28),
+                      child: const Icon(
+                        Icons.chevron_left,
+                        color: kNavy,
+                        size: 28,
+                      ),
                     ),
                   ),
                   const SizedBox(width: 14),
@@ -166,8 +172,10 @@ class _SimpleChatScreenState extends State<SimpleChatScreen> {
                         decoration: InputDecoration(
                           border: InputBorder.none,
                           hintText: 'Type a message...',
-                          hintStyle:
-                              GoogleFonts.manrope(fontSize: 17, color: kGrey),
+                          hintStyle: GoogleFonts.manrope(
+                            fontSize: 17,
+                            color: kGrey,
+                          ),
                         ),
                       ),
                     ),
@@ -181,8 +189,11 @@ class _SimpleChatScreenState extends State<SimpleChatScreen> {
                           color: kNavy,
                           shape: BoxShape.circle,
                         ),
-                        child: const Icon(Icons.near_me_outlined,
-                            color: Colors.white, size: 24),
+                        child: const Icon(
+                          Icons.near_me_outlined,
+                          color: Colors.white,
+                          size: 24,
+                        ),
                       ),
                     ),
                   ],

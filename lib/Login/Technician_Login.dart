@@ -1,15 +1,16 @@
-import 'package:fixly/Login/Signup_Technician.dart';
+import 'package:firebase_auth/firebase_auth.dart';
+
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
-
-import 'package:fixly/Login/Login.dart';
-import 'package:fixly/core/theme/app_colors.dart';
-import 'package:fixly/core/utils/validators.dart';
-import 'package:fixly/core/utils/forgot_password.dart';
-import 'package:fixly/core/services/technician_application_store.dart';
-
-import 'package:fixly/home/Dashboard_Technician/home_Technicaian.dart'
+import '../core/database/user_repository.dart';
+import '../core/services/auth_service.dart';
+import '../core/models/app_user.dart';
+import '../core/theme/app_colors.dart';
+import '../core/utils/forgot_password.dart';
+import '../core/utils/validators.dart';
+import '../home/Dashboard_Technician/technician_home_screen.dart'
     hide kGrey, kBorder, kBlue, kNavy, kBg;
+import 'Signup_Technician.dart';
 
 const Color kCyan = Color(0xFF14B8D6);
 const Color kHeaderSubtitle = Color(0xFF9DB0D3);
@@ -24,37 +25,80 @@ class TechnicianLoginScreen extends StatefulWidget {
 class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
   final _emailCtrl = TextEditingController();
   final _passCtrl = TextEditingController();
+  final AuthService _authService = AuthService();
 
   String? _emailError;
   String? _passError;
+  bool _isLoading = false;
 
-  void _onLogin() {
+  Future<void> _onLogin() async {
     final emailError = Validators.emailOrPhone(_emailCtrl.text);
     final passError = Validators.password(_passCtrl.text);
 
-    // لو في طلب انضمام بنفس الرقم ومش متوافق عليه، ممنوع الدخول
-    String? gateError;
-    final id = _emailCtrl.text.trim();
-    if (emailError == null && !id.contains('@')) {
-      final app = TechnicianApplicationStore.instance.findByPhone(id);
-      if (app != null && app.status != ApplicationStatus.approved) {
-        gateError = app.status == ApplicationStatus.pending
-            ? 'Your application is still under review'
-            : 'Your application was not approved';
-      }
-    }
-
     setState(() {
-      _emailError = emailError ?? gateError;
+      _emailError = emailError;
       _passError = passError;
     });
 
-    if (emailError != null || passError != null || gateError != null) return;
+    if (emailError != null || passError != null) return;
+    if (_isLoading) return;
 
-    Navigator.push(
-      context,
-      MaterialPageRoute(builder: (context) => const TechnicianHomeScreen()),
-    );
+    setState(() => _isLoading = true);
+
+    try {
+      final result = await _authService.signInWithEmailOrPhone(
+        identifier: _emailCtrl.text,
+        password: _passCtrl.text,
+      );
+
+      if (!mounted) return;
+
+      final appUser = result.appUser;
+
+      // لازم الحساب يكون فني ومعتمد من الأدمن قبل دخول لوحة الفني
+      String? blockMsg;
+      if (appUser == null || !appUser.isTechnician) {
+        blockMsg =
+            'هذا الحساب غير مسجل كفني. سجّل كفني من (Sign up) أو انضم من بروفايلك.';
+      } else if (appUser.accountStatus == AccountStatus.pendingApproval) {
+        blockMsg = 'طلبك لسه تحت المراجعة. هيوصلك إشعار بعد موافقة الأدمن.';
+      } else if (appUser.accountStatus == AccountStatus.rejected) {
+        blockMsg = 'تم رفض طلب الانضمام كفني.';
+      } else if (appUser.accountStatus == AccountStatus.suspended) {
+        blockMsg = 'تم إيقاف هذا الحساب. تواصل مع الدعم.';
+      }
+      if (blockMsg != null) {
+        await _authService.signOut();
+        if (!mounted) return;
+        ScaffoldMessenger.of(
+          context,
+        ).showSnackBar(SnackBar(content: Text(blockMsg)));
+        return;
+      }
+
+      await UserRepository().switchActiveRole(
+        appUser!.uid,
+        UserRole.technician,
+      );
+
+      if (!mounted) return;
+      Navigator.pushReplacement(
+        context,
+        MaterialPageRoute(builder: (context) => const TechnicianHomeScreen()),
+      );
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(content: Text(e.message ?? 'تعذر تسجيل الدخول (${e.code})')),
+      );
+    } catch (e) {
+      if (!mounted) return;
+      ScaffoldMessenger.of(
+        context,
+      ).showSnackBar(SnackBar(content: Text('تعذر تسجيل الدخول: $e')));
+    } finally {
+      if (mounted) setState(() => _isLoading = false);
+    }
   }
 
   @override
@@ -103,8 +147,6 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
     ),
   );
 
-  /// الهيدر الغامق: لوجو + PRO + العنوان
-  /// استبدل الـ Container الأبيض باللوجو بتاعك لو عاوز
   Widget _header() {
     return Container(
       width: double.infinity,
@@ -187,130 +229,124 @@ class _TechnicianLoginScreenState extends State<TechnicianLoginScreen> {
   Widget build(BuildContext context) {
     return Scaffold(
       backgroundColor: kBg,
-      body: LayoutBuilder(
-        builder: (context, constraints) => SingleChildScrollView(
-          child: ConstrainedBox(
-            constraints: BoxConstraints(minHeight: constraints.maxHeight),
-            child: IntrinsicHeight(
+      body: SingleChildScrollView(
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            _header(),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 24),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  _header(),
-                  Expanded(
+                  const SizedBox(height: 32),
+                  _label('Email or phone'),
+                  TextField(
+                    controller: _emailCtrl,
+                    keyboardType: TextInputType.emailAddress,
+                    style: _inputStyle,
+                    onChanged: (_) {
+                      if (_emailError != null) {
+                        setState(() => _emailError = null);
+                      }
+                    },
+                    decoration: _decoration(
+                      'Email or phone',
+                      errorText: _emailError,
+                    ),
+                  ),
+                  const SizedBox(height: 20),
+                  _label('Password'),
+                  TextField(
+                    controller: _passCtrl,
+                    obscureText: true,
+                    style: _inputStyle,
+                    onChanged: (_) {
+                      if (_passError != null) {
+                        setState(() => _passError = null);
+                      }
+                    },
+                    decoration: _decoration('Password', errorText: _passError),
+                  ),
+                  Align(
+                    alignment: Alignment.centerRight,
+                    child: TextButton(
+                      onPressed: _isLoading
+                          ? null
+                          : () => showForgotPasswordDialog(context),
+                      child: Text(
+                        'Forgot password?',
+                        style: GoogleFonts.manrope(
+                          fontSize: 16,
+                          fontWeight: FontWeight.w700,
+                          color: kBlue,
+                        ),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(height: 12),
+                  SizedBox(
+                    width: double.infinity,
+                    height: 60,
+                    child: ElevatedButton(
+                      onPressed: _isLoading ? null : _onLogin,
+                      style: ElevatedButton.styleFrom(
+                        backgroundColor: kNavy,
+                        foregroundColor: Colors.white,
+                        elevation: 0,
+                        shape: RoundedRectangleBorder(
+                          borderRadius: BorderRadius.circular(18),
+                        ),
+                      ),
+                      child: _isLoading
+                          ? const SizedBox(
+                              width: 24,
+                              height: 24,
+                              child: CircularProgressIndicator(
+                                strokeWidth: 2.2,
+                                color: Colors.white,
+                              ),
+                            )
+                          : Text(
+                              'Login',
+                              style: GoogleFonts.manrope(
+                                fontSize: 18,
+                                fontWeight: FontWeight.w700,
+                              ),
+                            ),
+                    ),
+                  ),
+                  const SizedBox(height: 36),
+                  Center(
                     child: Padding(
-                      padding: const EdgeInsets.symmetric(horizontal: 24),
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          const SizedBox(height: 32),
-
-                          _label('Email or phone'),
-                          TextField(
-                            controller: _emailCtrl,
-                            keyboardType: TextInputType.emailAddress,
-                            style: _inputStyle,
-                            onChanged: (_) {
-                              if (_emailError != null) {
-                                setState(() => _emailError = null);
-                              }
-                            },
-                            decoration: _decoration(
-                              'Email or phone',
-                              errorText: _emailError,
-                            ),
-                          ),
-                          const SizedBox(height: 20),
-
-                          _label('Password'),
-                          TextField(
-                            controller: _passCtrl,
-                            obscureText: true,
-                            style: _inputStyle,
-                            onChanged: (_) {
-                              if (_passError != null) {
-                                setState(() => _passError = null);
-                              }
-                            },
-                            decoration: _decoration(
-                              'Password',
-                              errorText: _passError,
-                            ),
-                          ),
-
-                          Align(
-                            alignment: Alignment.centerRight,
-                            child: TextButton(
-                              onPressed: () =>
-                                  showForgotPasswordDialog(context),
-                              child: Text(
-                                'Forgot password?',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 16,
-                                  fontWeight: FontWeight.w700,
-                                  color: kBlue,
-                                ),
-                              ),
-                            ),
-                          ),
-                          const SizedBox(height: 12),
-
-                          SizedBox(
-                            width: double.infinity,
-                            height: 60,
-                            child: ElevatedButton(
-                              onPressed: _onLogin,
-                              style: ElevatedButton.styleFrom(
-                                backgroundColor: kNavy,
-                                foregroundColor: Colors.white,
-                                elevation: 0,
-                                shape: RoundedRectangleBorder(
-                                  borderRadius: BorderRadius.circular(18),
-                                ),
-                              ),
-                              child: Text(
-                                'Login',
-                                style: GoogleFonts.manrope(
-                                  fontSize: 18,
-                                  fontWeight: FontWeight.w700,
-                                ),
-                              ),
-                            ),
-                          ),
-
-                          const Spacer(),
-
-                          Center(
-                            child: Padding(
-                              padding: const EdgeInsets.symmetric(vertical: 24),
-                              child: GestureDetector(
-                                onTap: () {
-                                  Navigator.push(
-                                    context,
-                                    MaterialPageRoute(
-                                      builder: (context) =>
-                                          TechnicianApplyScreen(),
-                                    ),
-                                  );
-                                },
-                                child: Text(
-                                  'New technician? Apply to join',
-                                  style: GoogleFonts.manrope(
-                                    fontSize: 16,
-                                    fontWeight: FontWeight.w800,
-                                    color: kBlue,
+                      padding: const EdgeInsets.symmetric(vertical: 24),
+                      child: GestureDetector(
+                        onTap: _isLoading
+                            ? null
+                            : () {
+                                Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (context) =>
+                                        const TechnicianApplyScreen(),
                                   ),
-                                ),
-                              ),
-                            ),
+                                );
+                              },
+                        child: Text(
+                          'New technician? Apply to join',
+                          style: GoogleFonts.manrope(
+                            fontSize: 16,
+                            fontWeight: FontWeight.w800,
+                            color: kBlue,
                           ),
-                        ],
+                        ),
                       ),
                     ),
                   ),
                 ],
               ),
             ),
-          ),
+          ],
         ),
       ),
     );

@@ -1,9 +1,12 @@
-import 'dart:ui' show PathMetric;
 import 'dart:typed_data';
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
 import 'package:image_picker/image_picker.dart';
-import 'package:fixly/Login/Login.dart';
+
+import '../core/services/fixly_ai_service.dart';
+import '../core/theme/app_colors.dart';
+import '../main.dart';
+import 'ai_chat_screen.dart';
 
 const Color _iconBg = Color(0xFFDCE9FF);
 const Color _dropFill = Color(0xFFF0F5FD);
@@ -23,9 +26,11 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   int _step = 0;
   final ImagePicker _picker = ImagePicker();
   Uint8List? _imageBytes;
-  _Analysis? _result;
+  String? _imagePath;
+  AiDiagnosisResult? _result;
 
   Future<void> _choosePhoto() async {
+    final isAr = appLocale.value.languageCode == 'ar';
     final source = await showModalBottomSheet<ImageSource>(
       context: context,
       showDragHandle: true,
@@ -35,19 +40,19 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
           children: [
             ListTile(
               leading: const Icon(Icons.photo_camera_outlined),
-              title: const Text('Take a photo'),
+              title: Text(isAr ? 'التقاط صورة بالكاميرا' : 'Take a photo'),
               onTap: () => Navigator.pop(ctx, ImageSource.camera),
             ),
             ListTile(
               leading: const Icon(Icons.photo_library_outlined),
-              title: const Text('Choose from gallery'),
+              title: Text(isAr ? 'اختيار صورة من المعرض' : 'Choose from gallery'),
               onTap: () => Navigator.pop(ctx, ImageSource.gallery),
             ),
           ],
         ),
       ),
     );
-    if (source == null) return;
+    if (source == null || !mounted) return;
 
     try {
       final file = await _picker.pickImage(source: source, imageQuality: 80);
@@ -57,78 +62,84 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
 
       setState(() {
         _imageBytes = bytes;
+        _imagePath = file.path;
         _step = 1; // Analyzing
       });
 
-      // تحليل وهمي (بدل الـ AI الحقيقي)
-      await Future.delayed(const Duration(seconds: 2));
+      // تحليل بالذكاء الاصطناعي الحقيقي
+      final diagnosis = await FixlyAiService.instance.diagnoseProblem(
+        description: file.name,
+        imageBytes: bytes,
+      );
+
       if (!mounted) return;
 
       setState(() {
-        _result = _mockAnalysis(file.name);
+        _result = diagnosis;
         _step = 2; // Result
       });
     } catch (_) {
       if (!mounted) return;
       setState(() => _step = 0);
       ScaffoldMessenger.of(context).showSnackBar(
-        const SnackBar(content: Text('Could not open the camera/gallery')),
+        SnackBar(
+          content: Text(
+            isAr ? 'تعذر فتح الكاميرا أو المعرض' : 'Could not open the camera/gallery',
+          ),
+        ),
       );
     }
-  }
-
-  _Analysis _mockAnalysis(String fileName) {
-    const results = [
-      _Analysis(
-        'Air Conditioning',
-        'Dirty filter / low cooling',
-        'Medium',
-        0.86,
-      ),
-      _Analysis('Plumbing', 'Pipe leak under the sink', 'High', 0.81),
-      _Analysis('Electrical', 'Damaged socket or wiring', 'High', 0.78),
-      _Analysis(
-        'Appliance Repair',
-        'Washing machine drainage issue',
-        'Low',
-        0.74,
-      ),
-    ];
-    final sum = fileName.codeUnits.fold<int>(0, (a, b) => a + b);
-    return results[sum % results.length];
   }
 
   void _reset() {
     setState(() {
       _step = 0;
       _imageBytes = null;
+      _imagePath = null;
       _result = null;
     });
   }
 
+  void _continueWithResult() {
+    final r = _result;
+    if (r == null) return;
+    Navigator.pushReplacement(
+      context,
+      MaterialPageRoute(
+        builder: (_) => AiChatScreen(
+          initialPhotoBytes: _imageBytes,
+          initialPhotoPath: _imagePath,
+          initialMessage:
+              'تحليل الصورة أظهر عطل في (${r.serviceCategory}): ${r.issueSummary} (الأهمية: ${r.urgency}).',
+        ),
+      ),
+    );
+  }
+
   // ---------- Header ----------
   Widget _header() {
+    final isAr = appLocale.value.languageCode == 'ar';
     return Row(
       children: [
         InkWell(
           onTap: () => Navigator.maybePop(context),
           borderRadius: BorderRadius.circular(16),
           child: Container(
-            width: 52,
-            height: 52,
+            width: 48,
+            height: 48,
             decoration: BoxDecoration(
               color: Colors.white,
               borderRadius: BorderRadius.circular(16),
               border: Border.all(color: kBorder.withValues(alpha: 0.6)),
             ),
-            child: const Icon(Icons.chevron_left, color: kNavy, size: 28),
+            child: const Icon(Icons.arrow_back, color: kNavy, size: 24),
           ),
         ),
-        const SizedBox(width: 18),
+        const SizedBox(width: 16),
         Text(
-          'AI Image Analysis',
+          isAr ? 'تحليل الصور بالذكاء الاصطناعي' : 'AI Image Analysis',
           style: GoogleFonts.manrope(
-            fontSize: 24,
+            fontSize: 20,
             fontWeight: FontWeight.w800,
             color: kNavy,
           ),
@@ -144,8 +155,8 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
       mainAxisSize: MainAxisSize.min,
       children: [
         Container(
-          width: 36,
-          height: 36,
+          width: 32,
+          height: 32,
           alignment: Alignment.center,
           decoration: BoxDecoration(
             color: active ? kNavy : _stepInactiveBg,
@@ -154,17 +165,17 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
           child: Text(
             '${index + 1}',
             style: GoogleFonts.manrope(
-              fontSize: 14,
+              fontSize: 13,
               fontWeight: FontWeight.w800,
               color: active ? Colors.white : kGrey,
             ),
           ),
         ),
-        const SizedBox(width: 8),
+        const SizedBox(width: 6),
         Text(
           label,
           style: GoogleFonts.manrope(
-            fontSize: 16,
+            fontSize: 14,
             fontWeight: active ? FontWeight.w800 : FontWeight.w600,
             color: active ? kNavy : kGrey,
           ),
@@ -176,66 +187,69 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   Widget _stepLineWidget() {
     return Expanded(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 10),
+        padding: const EdgeInsets.symmetric(horizontal: 8),
         child: Container(height: 2, color: _stepLine),
       ),
     );
   }
 
   Widget _stepper() {
+    final isAr = appLocale.value.languageCode == 'ar';
     return Row(
       children: [
-        _stepItem(0, 'Upload'),
+        _stepItem(0, isAr ? 'رفع الصورة' : 'Upload'),
         _stepLineWidget(),
-        _stepItem(1, 'Analyzing'),
+        _stepItem(1, isAr ? 'جاري التحليل' : 'Analyzing'),
         _stepLineWidget(),
-        _stepItem(2, 'Result'),
+        _stepItem(2, isAr ? 'النتيجة' : 'Result'),
       ],
     );
   }
 
   // ---------- Upload box ----------
   Widget _uploadBox() {
+    final isAr = appLocale.value.languageCode == 'ar';
     return GestureDetector(
       onTap: _choosePhoto,
-      child: CustomPaint(
-        painter: _DashedBoxPainter(
-          fill: _dropFill,
-          border: _dropBorder,
-          radius: 30,
+      child: Container(
+        width: double.infinity,
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 20),
+        decoration: BoxDecoration(
+          color: _dropFill,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: _dropBorder, width: 1.5),
         ),
-        child: SizedBox(
-          width: double.infinity,
-          child: Column(
-            mainAxisAlignment: MainAxisAlignment.center,
-            children: [
-              Container(
-                width: 120,
-                height: 120,
-                decoration: BoxDecoration(
-                  color: _iconBg,
-                  borderRadius: BorderRadius.circular(32),
-                ),
-                child: const Icon(Icons.photo_camera, color: kBlue, size: 44),
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Container(
+              width: 100,
+              height: 100,
+              decoration: BoxDecoration(
+                color: _iconBg,
+                borderRadius: BorderRadius.circular(28),
               ),
-              const SizedBox(height: 22),
-              Text(
-                'Upload a photo of the problem',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(
-                  fontSize: 24,
-                  fontWeight: FontWeight.w800,
-                  color: kNavy,
-                ),
+              child: const Icon(Icons.photo_camera, color: kBlue, size: 40),
+            ),
+            const SizedBox(height: 20),
+            Text(
+              isAr ? 'ارفع صورة واضحة للعطل أو المشكلة' : 'Upload a photo of the problem',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: kNavy,
               ),
-              const SizedBox(height: 12),
-              Text(
-                'Clear, well-lit photos give better results.',
-                textAlign: TextAlign.center,
-                style: GoogleFonts.manrope(fontSize: 17, color: kGrey),
-              ),
-            ],
-          ),
+            ),
+            const SizedBox(height: 10),
+            Text(
+              isAr
+                  ? 'الصور الواضحة والمضاءة جيداً تساعد الذكاء الاصطناعي في تحديد العطل بدقة وترشيح الفني الأنسب'
+                  : 'Clear, well-lit photos give better AI diagnosis and matching.',
+              textAlign: TextAlign.center,
+              style: GoogleFonts.manrope(fontSize: 14, color: kGrey),
+            ),
+          ],
         ),
       ),
     );
@@ -243,27 +257,29 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
 
   // ---------- Analyzing ----------
   Widget _analyzingView() {
+    final isAr = appLocale.value.languageCode == 'ar';
     return Center(
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
           if (_imageBytes != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               child: Image.memory(
                 _imageBytes!,
-                width: 200,
-                height: 200,
+                width: 180,
+                height: 180,
                 fit: BoxFit.cover,
               ),
             ),
-          const SizedBox(height: 28),
+          const SizedBox(height: 24),
           const CircularProgressIndicator(color: kBlue),
-          const SizedBox(height: 20),
+          const SizedBox(height: 18),
           Text(
-            'Analyzing your photo...',
+            isAr ? 'يقوم Fixly AI بتحليل الصورة وتشخيص العطل...' : 'Fixly AI is analyzing your photo...',
+            textAlign: TextAlign.center,
             style: GoogleFonts.manrope(
-              fontSize: 20,
+              fontSize: 18,
               fontWeight: FontWeight.w800,
               color: kNavy,
             ),
@@ -276,23 +292,23 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   // ---------- Result ----------
   Widget _resultRow(String label, String value) {
     return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
+      padding: const EdgeInsets.only(bottom: 12),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
             label,
             style: GoogleFonts.manrope(
-              fontSize: 13,
+              fontSize: 12,
               fontWeight: FontWeight.w800,
               color: kGrey,
             ),
           ),
-          const SizedBox(height: 4),
+          const SizedBox(height: 3),
           Text(
             value,
             style: GoogleFonts.manrope(
-              fontSize: 19,
+              fontSize: 16,
               fontWeight: FontWeight.w800,
               color: kNavy,
             ),
@@ -303,51 +319,59 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
   }
 
   Widget _resultView() {
+    final isAr = appLocale.value.languageCode == 'ar';
     final r = _result!;
     final percent = (r.confidence * 100).round();
+
     return SingleChildScrollView(
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           if (_imageBytes != null)
             ClipRRect(
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               child: Image.memory(
                 _imageBytes!,
                 width: double.infinity,
-                height: 220,
+                height: 200,
                 fit: BoxFit.cover,
               ),
             ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 16),
           Container(
             width: double.infinity,
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
               color: Colors.white,
-              borderRadius: BorderRadius.circular(24),
+              borderRadius: BorderRadius.circular(20),
               border: Border.all(color: kBorder),
             ),
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
-                _resultRow('SERVICE', r.service),
-                _resultRow('POSSIBLE ISSUE', r.issue),
-                _resultRow('URGENCY', r.urgency),
+                _resultRow(isAr ? 'الخدمة' : 'SERVICE', r.serviceCategory),
+                _resultRow(isAr ? 'العطل المشخص' : 'POSSIBLE ISSUE', r.issueSummary),
+                _resultRow(
+                  isAr ? 'مستوى الخبرة المطلوبة' : 'DIFFICULTY LEVEL',
+                  r.needsExpert
+                      ? (isAr ? 'يحتاج خبير معتمد ★' : 'Requires Certified Expert ★')
+                      : (isAr ? 'صيانة عامة' : 'Standard Repair'),
+                ),
+                _resultRow(isAr ? 'الأهمية' : 'URGENCY', r.urgency),
                 Text(
-                  'AI CONFIDENCE  $percent%',
+                  '${isAr ? 'دقة التشخيص' : 'AI CONFIDENCE'}  $percent%',
                   style: GoogleFonts.manrope(
-                    fontSize: 13,
+                    fontSize: 12,
                     fontWeight: FontWeight.w800,
                     color: kGrey,
                   ),
                 ),
-                const SizedBox(height: 8),
+                const SizedBox(height: 6),
                 ClipRRect(
-                  borderRadius: BorderRadius.circular(10),
+                  borderRadius: BorderRadius.circular(8),
                   child: LinearProgressIndicator(
                     value: r.confidence,
-                    minHeight: 8,
+                    minHeight: 7,
                     color: kBlue,
                     backgroundColor: _stepInactiveBg,
                   ),
@@ -373,40 +397,43 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
 
   @override
   Widget build(BuildContext context) {
+    final isAr = appLocale.value.languageCode == 'ar';
     return Scaffold(
       backgroundColor: kBg,
       body: SafeArea(
         child: Padding(
-          padding: const EdgeInsets.fromLTRB(24, 16, 24, 24),
+          padding: const EdgeInsets.fromLTRB(20, 16, 20, 20),
           child: Column(
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               _header(),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               _stepper(),
-              const SizedBox(height: 18),
+              const SizedBox(height: 16),
               Expanded(child: _body()),
-              const SizedBox(height: 20),
+              const SizedBox(height: 16),
               if (_step != 1)
                 SizedBox(
                   width: double.infinity,
-                  height: 60,
+                  height: 56,
                   child: ElevatedButton(
-                    onPressed: _step == 0
-                        ? _choosePhoto
-                        : () => Navigator.maybePop(context),
+                    onPressed: _step == 0 ? _choosePhoto : _continueWithResult,
                     style: ElevatedButton.styleFrom(
                       backgroundColor: kNavy,
                       foregroundColor: Colors.white,
                       elevation: 0,
                       shape: RoundedRectangleBorder(
-                        borderRadius: BorderRadius.circular(18),
+                        borderRadius: BorderRadius.circular(16),
                       ),
                     ),
                     child: Text(
-                      _step == 0 ? 'Choose photo' : 'Done',
+                      _step == 0
+                          ? (isAr ? 'اختيار صورة' : 'Choose photo')
+                          : (isAr
+                              ? 'المتابعة لترشيح الفني والطلب'
+                              : 'Continue to AI Chat & Technician Match'),
                       style: GoogleFonts.manrope(
-                        fontSize: 18,
+                        fontSize: 16,
                         fontWeight: FontWeight.w700,
                       ),
                     ),
@@ -417,9 +444,9 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
                   child: TextButton(
                     onPressed: _reset,
                     child: Text(
-                      'Analyze another photo',
+                      isAr ? 'تحليل صورة أخرى' : 'Analyze another photo',
                       style: GoogleFonts.manrope(
-                        fontSize: 16,
+                        fontSize: 15,
                         fontWeight: FontWeight.w700,
                         color: kBlue,
                       ),
@@ -432,59 +459,4 @@ class _AiImageAnalysisScreenState extends State<AiImageAnalysisScreen> {
       ),
     );
   }
-}
-
-class _DashedBoxPainter extends CustomPainter {
-  final Color fill;
-  final Color border;
-  final double radius;
-  static const double dashWidth = 6;
-  static const double dashGap = 4;
-
-  _DashedBoxPainter({
-    required this.fill,
-    required this.border,
-    this.radius = 30,
-  });
-
-  @override
-  void paint(Canvas canvas, Size size) {
-    final rrect = RRect.fromRectAndRadius(
-      Offset.zero & size,
-      Radius.circular(radius),
-    );
-
-    canvas.drawRRect(rrect, Paint()..color = fill);
-
-    final stroke = Paint()
-      ..color = border
-      ..style = PaintingStyle.stroke
-      ..strokeWidth = 1.6;
-
-    final path = Path()..addRRect(rrect.deflate(1));
-
-    for (final PathMetric metric in path.computeMetrics()) {
-      double distance = 0;
-      while (distance < metric.length) {
-        canvas.drawPath(
-          metric.extractPath(distance, distance + dashWidth),
-          stroke,
-        );
-        distance += dashWidth + dashGap;
-      }
-    }
-  }
-
-  @override
-  bool shouldRepaint(covariant _DashedBoxPainter old) =>
-      old.fill != fill || old.border != border || old.radius != radius;
-}
-
-class _Analysis {
-  final String service;
-  final String issue;
-  final String urgency;
-  final double confidence;
-
-  const _Analysis(this.service, this.issue, this.urgency, this.confidence);
 }

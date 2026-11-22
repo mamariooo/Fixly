@@ -1,6 +1,15 @@
+import 'package:cloud_firestore/cloud_firestore.dart';
+import 'package:firebase_auth/firebase_auth.dart';
 
 import 'package:flutter/material.dart';
 import 'package:google_fonts/google_fonts.dart';
+
+import '../../Login/Login.dart';
+import '../home.dart';
+import '../../core/database/firestore_paths.dart';
+import '../../core/database/user_repository.dart';
+import '../../core/models/app_user.dart';
+import '../../core/services/auth_service.dart';
 
 const Color kProfileNavy = Color(0xFF1C3358);
 const Color kProfileBg = Color(0xFFF5F7FB);
@@ -8,15 +17,78 @@ const Color kProfileGrey = Color(0xFF8492A6);
 const Color kProfileBorder = Color(0xFFE5EAF1);
 const Color kProfileCyan = Color(0xFF14B8D6);
 
-class TechnicianProfileScreen extends StatelessWidget {
+class TechnicianProfileScreen extends StatefulWidget {
   const TechnicianProfileScreen({super.key});
 
+  @override
+  State<TechnicianProfileScreen> createState() =>
+      _TechnicianProfileScreenState();
+}
+
+class _TechnicianProfileScreenState extends State<TechnicianProfileScreen> {
+  final AuthService _authService = AuthService();
+  final UserRepository _userRepo = UserRepository();
+
+  String _name = 'أحمد محمد';
+  String _specialty = 'فني صيانة';
+  String _area = 'مدينة نصر، القاهرة';
+  String _phone = '';
+  String _email = '';
+  double _rating = 4.8;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadProfile();
+  }
+
+  Future<void> _loadProfile() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    setState(() {
+      _email = user.email ?? '';
+      if (user.displayName != null && user.displayName!.trim().isNotEmpty) {
+        _name = user.displayName!.trim();
+      }
+    });
+
+    final appUser = await _userRepo.getUserById(user.uid);
+    if (!mounted || appUser == null) return;
+
+    setState(() {
+      if (appUser.fullName.trim().isNotEmpty) {
+        _name = appUser.fullName.trim();
+      }
+      if (appUser.area != null && appUser.area!.trim().isNotEmpty) {
+        _area = appUser.area!.trim();
+      }
+      if (appUser.phone != null && appUser.phone!.trim().isNotEmpty) {
+        _phone = appUser.phone!.trim();
+      }
+    });
+
+    final techDoc = await FirebaseFirestore.instance
+        .collection(FirestorePaths.technicianProfiles)
+        .doc(user.uid)
+        .get();
+    if (!mounted || !techDoc.exists || techDoc.data() == null) return;
+
+    final data = techDoc.data()!;
+    setState(() {
+      final spec = data['specialty'] as String?;
+      if (spec != null && spec.trim().isNotEmpty) {
+        _specialty = spec.trim();
+      }
+      final ratingNum = data['rating'] as num?;
+      if (ratingNum != null) {
+        _rating = ratingNum.toDouble();
+      }
+    });
+  }
+
   TextStyle text(double size, FontWeight weight, Color color) {
-    return GoogleFonts.cairo(
-      fontSize: size,
-      fontWeight: weight,
-      color: color,
-    );
+    return GoogleFonts.cairo(fontSize: size, fontWeight: weight, color: color);
   }
 
   Widget profileItem({
@@ -34,10 +106,7 @@ class TechnicianProfileScreen extends StatelessWidget {
         border: Border.all(color: kProfileBorder),
       ),
       child: ListTile(
-        contentPadding: const EdgeInsets.symmetric(
-          horizontal: 16,
-          vertical: 5,
-        ),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 5),
         leading: Container(
           width: 45,
           height: 45,
@@ -47,16 +116,10 @@ class TechnicianProfileScreen extends StatelessWidget {
           ),
           child: Icon(icon, color: iconColor ?? kProfileCyan),
         ),
-        title: Text(
-          title,
-          style: text(15, FontWeight.w700, kProfileNavy),
-        ),
+        title: Text(title, style: text(15, FontWeight.w700, kProfileNavy)),
         subtitle: subtitle == null
             ? null
-            : Text(
-                subtitle,
-                style: text(12, FontWeight.w500, kProfileGrey),
-              ),
+            : Text(subtitle, style: text(12, FontWeight.w500, kProfileGrey)),
         trailing: const Icon(
           Icons.arrow_forward_ios,
           size: 16,
@@ -67,14 +130,91 @@ class TechnicianProfileScreen extends StatelessWidget {
     );
   }
 
-  void showMessage(BuildContext context, String message) {
-    ScaffoldMessenger.of(context).showSnackBar(
-      SnackBar(content: Text(message)),
+  void showMessage(String message) {
+    if (!mounted) return;
+    ScaffoldMessenger.of(
+      context,
+    ).showSnackBar(SnackBar(content: Text(message)));
+  }
+
+  Future<void> _editFieldDialog({
+    required String title,
+    required String fieldKey,
+    required String initialValue,
+    required bool isTechProfileField,
+  }) async {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+
+    final ctrl = TextEditingController(text: initialValue);
+    final saved = await showDialog<String>(
+      context: context,
+      builder: (ctx) => Directionality(
+        textDirection: TextDirection.rtl,
+        child: AlertDialog(
+          title: Text(title, style: text(18, FontWeight.w800, kProfileNavy)),
+          content: TextField(
+            controller: ctrl,
+            decoration: InputDecoration(labelText: title),
+          ),
+          actions: [
+            TextButton(
+              onPressed: () => Navigator.pop(ctx),
+              child: const Text('إلغاء'),
+            ),
+            TextButton(
+              onPressed: () => Navigator.pop(ctx, ctrl.text.trim()),
+              child: const Text('حفظ'),
+            ),
+          ],
+        ),
+      ),
+    );
+    ctrl.dispose();
+
+    if (saved == null || saved.isEmpty) return;
+
+    final collection = isTechProfileField
+        ? FirestorePaths.technicianProfiles
+        : FirestorePaths.users;
+
+    await FirebaseFirestore.instance.collection(collection).doc(uid).set({
+      fieldKey: saved,
+      'updatedAt': FieldValue.serverTimestamp(),
+    }, SetOptions(merge: true));
+
+    if (fieldKey == 'fullName') {
+      await FirebaseAuth.instance.currentUser?.updateDisplayName(saved);
+    }
+
+    if (!mounted) return;
+    setState(() {
+      if (fieldKey == 'fullName') _name = saved;
+      if (fieldKey == 'specialty') _specialty = saved;
+      if (fieldKey == 'area') _area = saved;
+      if (fieldKey == 'phone') _phone = saved;
+    });
+    showMessage('تم حفظ التعديلات');
+  }
+
+  Future<void> _logout() async {
+    await _authService.signOut();
+    if (!mounted) return;
+    Navigator.of(context, rootNavigator: true).pushAndRemoveUntil(
+      MaterialPageRoute(builder: (_) => const LoginScreen()),
+      (route) => false,
     );
   }
 
   @override
   Widget build(BuildContext context) {
+    final personalSubtitle = _phone.isEmpty && _email.isEmpty
+        ? 'الاسم ورقم الهاتف والبريد الإلكتروني'
+        : [
+            if (_phone.isNotEmpty) _phone,
+            if (_email.isNotEmpty) _email,
+          ].join(' · ');
+
     return Directionality(
       textDirection: TextDirection.rtl,
       child: Scaffold(
@@ -82,17 +222,11 @@ class TechnicianProfileScreen extends StatelessWidget {
         appBar: AppBar(
           backgroundColor: Colors.white,
           elevation: 0,
-          title: Text(
-            'حسابي',
-            style: text(22, FontWeight.w800, kProfileNavy),
-          ),
+          title: Text('حسابي', style: text(22, FontWeight.w800, kProfileNavy)),
           actions: [
             IconButton(
-              onPressed: () => showMessage(context, 'الإعدادات قريبًا'),
-              icon: const Icon(
-                Icons.settings_outlined,
-                color: kProfileNavy,
-              ),
+              onPressed: () => showMessage('الإعدادات قريبًا'),
+              icon: const Icon(Icons.settings_outlined, color: kProfileNavy),
             ),
           ],
         ),
@@ -113,10 +247,7 @@ class TechnicianProfileScreen extends StatelessWidget {
                       padding: const EdgeInsets.all(4),
                       decoration: BoxDecoration(
                         shape: BoxShape.circle,
-                        border: Border.all(
-                          color: Colors.white54,
-                          width: 2,
-                        ),
+                        border: Border.all(color: Colors.white54, width: 2),
                       ),
                       child: const CircleAvatar(
                         radius: 43,
@@ -129,13 +260,10 @@ class TechnicianProfileScreen extends StatelessWidget {
                       ),
                     ),
                     const SizedBox(height: 14),
-                    Text(
-                      'أحمد محمد',
-                      style: text(23, FontWeight.w800, Colors.white),
-                    ),
+                    Text(_name, style: text(23, FontWeight.w800, Colors.white)),
                     const SizedBox(height: 4),
                     Text(
-                      'فني صيانة',
+                      _specialty,
                       style: text(14, FontWeight.w500, Colors.white70),
                     ),
                     const SizedBox(height: 14),
@@ -159,50 +287,72 @@ class TechnicianProfileScreen extends StatelessWidget {
 
               const SizedBox(height: 28),
 
-              Text(
-                'حسابك',
-                style: text(20, FontWeight.w800, kProfileNavy),
-              ),
+              Text('حسابك', style: text(20, FontWeight.w800, kProfileNavy)),
               const SizedBox(height: 14),
+
+              profileItem(
+                icon: Icons.swap_horiz,
+                title: 'التبديل إلى وضع العميل',
+                subtitle: 'استخدم Fixly كعميل لطلب فنيين وصيانة منزلك',
+                iconColor: const Color(0xFF1B4FA8),
+                onTap: () async {
+                  final uid = FirebaseAuth.instance.currentUser?.uid;
+                  if (uid != null) {
+                    try {
+                      await _userRepo.switchActiveRole(uid, UserRole.client);
+                    } catch (_) {}
+                  }
+                  if (!context.mounted) return;
+                  Navigator.pushAndRemoveUntil(
+                    context,
+                    MaterialPageRoute(builder: (_) => const HomeScreen()),
+                    (r) => false,
+                  );
+                },
+              ),
 
               profileItem(
                 icon: Icons.person_outline,
                 title: 'البيانات الشخصية',
-                subtitle: 'الاسم ورقم الهاتف والبريد الإلكتروني',
-                onTap: () => showMessage(
-                  context,
-                  'صفحة تعديل البيانات الشخصية قريبًا',
+                subtitle: personalSubtitle,
+                onTap: () => _editFieldDialog(
+                  title: 'الاسم الكامل',
+                  fieldKey: 'fullName',
+                  initialValue: _name,
+                  isTechProfileField: false,
                 ),
               ),
 
               profileItem(
                 icon: Icons.build_outlined,
                 title: 'التخصصات والخدمات',
-                subtitle: 'إدارة الخدمات التي تقدمها',
-                onTap: () => showMessage(
-                  context,
-                  'صفحة التخصصات والخدمات قريبًا',
+                subtitle: _specialty,
+                onTap: () => _editFieldDialog(
+                  title: 'التخصص',
+                  fieldKey: 'specialty',
+                  initialValue: _specialty,
+                  isTechProfileField: true,
                 ),
               ),
 
               profileItem(
                 icon: Icons.location_on_outlined,
                 title: 'منطقة الخدمة',
-                subtitle: 'مدينة نصر، القاهرة',
-                onTap: () => showMessage(
-                  context,
-                  'تعديل منطقة الخدمة قريبًا',
+                subtitle: _area,
+                onTap: () => _editFieldDialog(
+                  title: 'منطقة الخدمة',
+                  fieldKey: 'area',
+                  initialValue: _area,
+                  isTechProfileField: false,
                 ),
               ),
 
               profileItem(
                 icon: Icons.star_outline,
                 title: 'التقييمات',
-                subtitle: 'تقييمك الحالي 4.8',
-                onTap: () => showMessage(
-                  context,
-                  'صفحة التقييمات قريبًا',
-                ),
+                subtitle: 'تقييمك الحالي ${_rating.toStringAsFixed(1)}',
+                onTap: () =>
+                    showMessage('تقييمك الحالي ${_rating.toStringAsFixed(1)}'),
               ),
 
               const SizedBox(height: 12),
@@ -217,40 +367,28 @@ class TechnicianProfileScreen extends StatelessWidget {
                 icon: Icons.notifications_none,
                 title: 'الإشعارات',
                 subtitle: 'إدارة تنبيهات الطلبات',
-                onTap: () => showMessage(
-                  context,
-                  'إعدادات الإشعارات قريبًا',
-                ),
+                onTap: () => showMessage('إعدادات الإشعارات قريبًا'),
               ),
 
               profileItem(
                 icon: Icons.lock_outline,
                 title: 'الخصوصية والأمان',
                 subtitle: 'إدارة كلمة المرور وأمان الحساب',
-                onTap: () => showMessage(
-                  context,
-                  'إعدادات الخصوصية قريبًا',
-                ),
+                onTap: () => showMessage('إعدادات الخصوصية قريبًا'),
               ),
 
               profileItem(
                 icon: Icons.help_outline,
                 title: 'المساعدة والدعم',
                 subtitle: 'تواصل مع فريق Fixly',
-                onTap: () => showMessage(
-                  context,
-                  'صفحة الدعم قريبًا',
-                ),
+                onTap: () => showMessage('صفحة الدعم قريبًا'),
               ),
 
               profileItem(
                 icon: Icons.info_outline,
                 title: 'عن Fixly',
                 subtitle: 'معلومات عن التطبيق',
-                onTap: () => showMessage(
-                  context,
-                  'Fixly - خدمات الصيانة المنزلية',
-                ),
+                onTap: () => showMessage('Fixly - خدمات الصيانة المنزلية'),
               ),
 
               const SizedBox(height: 12),
@@ -264,47 +402,39 @@ class TechnicianProfileScreen extends StatelessWidget {
                   showDialog(
                     context: context,
                     builder: (dialogContext) {
-                      return AlertDialog(
-                        title: Text(
-                          'تسجيل الخروج',
-                          style: text(20, FontWeight.w800, kProfileNavy),
-                        ),
-                        content: Text(
-                          'هل أنت متأكد أنك تريد تسجيل الخروج؟',
-                          style: text(14, FontWeight.w500, kProfileGrey),
-                        ),
-                        actions: [
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(dialogContext);
-                            },
-                            child: Text(
-                              'إلغاء',
-                              style: text(
-                                14,
-                                FontWeight.w700,
-                                kProfileGrey,
+                      return Directionality(
+                        textDirection: TextDirection.rtl,
+                        child: AlertDialog(
+                          title: Text(
+                            'تسجيل الخروج',
+                            style: text(20, FontWeight.w800, kProfileNavy),
+                          ),
+                          content: Text(
+                            'هل أنت متأكد أنك تريد تسجيل الخروج؟',
+                            style: text(14, FontWeight.w500, kProfileGrey),
+                          ),
+                          actions: [
+                            TextButton(
+                              onPressed: () {
+                                Navigator.pop(dialogContext);
+                              },
+                              child: Text(
+                                'إلغاء',
+                                style: text(14, FontWeight.w700, kProfileGrey),
                               ),
                             ),
-                          ),
-                          TextButton(
-                            onPressed: () {
-                              Navigator.pop(dialogContext);
-                              showMessage(
-                                context,
-                                'اربط الزر بنظام تسجيل الخروج الفعلي',
-                              );
-                            },
-                            child: Text(
-                              'تأكيد',
-                              style: text(
-                                14,
-                                FontWeight.w800,
-                                Colors.red,
+                            TextButton(
+                              onPressed: () async {
+                                Navigator.pop(dialogContext);
+                                await _logout();
+                              },
+                              child: Text(
+                                'تأكيد',
+                                style: text(14, FontWeight.w800, Colors.red),
                               ),
                             ),
-                          ),
-                        ],
+                          ],
+                        ),
                       );
                     },
                   );

@@ -18,3 +18,16 @@ class C {
   /// Used for invalid input (border + helper text).
   static const error = Color(0xFFD92D20);
 }
+
+// Compatibility aliases — values match existing screens (do not change colors).
+const Color kNavy = Color(0xFF0B1F3A);
+const Color kBlue = Color(0xFF1D5FD8);
+const Color kBg = Color(0xFFF7F8FC);
+const Color kGrey = Color(0xFF6B7587);
+const Color kBorder = Color(0xFFDCE0EA);
+const Color kCyan = Color(0xFF14B8D6);
+const Color kCyanLabel = Color(0xFF14B8D6);
+const Color kNavyLight = Color(0xFF1C3358);
+const Color kIconBg = Color(0xFFDCE9FF);
+const Color kGreenBg = Color(0xFFDDF3E6);
+const Color kGreenText = Color(0xFF14733A);
